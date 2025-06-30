@@ -2,6 +2,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import server.inventory.StockManager;
+
 import java.math.BigDecimal;
 
 public class OrderProcessor {
