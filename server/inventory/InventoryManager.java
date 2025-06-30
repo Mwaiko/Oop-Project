@@ -11,30 +11,31 @@ import java.util.stream.Collectors;
 public class InventoryManager {
     private DatabaseManager dbManager;
     
-    public InventoryManager(DatabaseManager dbManager) {
+    public InventoryManager() {
         this.dbManager = dbManager;
     }
     
     public void initializeSampleDrinks() {
         if (dbManager.getAllDrinks().isEmpty()) {
+            // Coca Cola (your original example)
             // Sodas
-            dbManager.addDrink("Coca Cola", "Coca Cola", new BigDecimal("80"), 200, 50);
-            dbManager.addDrink(new Drink(0, "Sprite", "Coca Cola", new BigDecimal("80"), 150, 40));
-            dbManager.addDrink(new Drink(0, "Fanta Orange", "Coca Cola", new BigDecimal("80"), 120, 30));
-            dbManager.addDrink(new Drink(0, "Fanta Pineapple", "Coca Cola", new BigDecimal("80"), 100, 30));
-            
+            dbManager.addDrink("Coca Cola", "Coca Cola", 50, new BigDecimal("50"), 50);
+            dbManager.addDrink("Sprite", "Coca Cola", 150, new BigDecimal("80"), 40);
+            dbManager.addDrink("Fanta Orange", "Coca Cola", 120, new BigDecimal("80"), 30);
+            dbManager.addDrink("Fanta Pineapple", "Coca Cola", 100, new BigDecimal("80"), 30);
+
             // Water
-            dbManager.addDrink(new Drink(0, "Still Water 500ml", "Aquamist", new BigDecimal("50"), 300, 100));
-            dbManager.addDrink(new Drink(0, "Sparkling Water 500ml", "Aquamist", new BigDecimal("75"), 150, 50));
-            
+            dbManager.addDrink("Still Water 500ml", "Aquamist", 300, new BigDecimal("50"), 100);
+            dbManager.addDrink("Sparkling Water 500ml", "Aquamist", 150, new BigDecimal("75"), 50);
+
             // Juice
-            dbManager.addDrink(new Drink(0, "Orange Juice", "Freshly", new BigDecimal("120"), 80, 20));
-            dbManager.addDrink(new Drink(0, "Mango Juice", "Freshly", new BigDecimal("120"), 70, 20));
-            dbManager.addDrink(new Drink(0, "Mixed Berry Juice", "Freshly", new BigDecimal("130"), 60, 15));
-            
+            dbManager.addDrink("Orange Juice", "Freshly", 80, new BigDecimal("120"), 20);
+            dbManager.addDrink("Mango Juice", "Freshly", 70, new BigDecimal("120"), 20);
+            dbManager.addDrink("Mixed Berry Juice", "Freshly", 60, new BigDecimal("130"), 15);
+
             // Energy Drinks
-            dbManager.addDrink(new Drink(0, "Power Energy", "PowerBoost", new BigDecimal("150"), 100, 25));
-            dbManager.addDrink(new Drink(0, "Red Bull", "Red Bull", new BigDecimal("200"), 80, 20));
+            dbManager.addDrink("Power Energy", "PowerBoost", 100, new BigDecimal("150"), 25);
+            dbManager.addDrink("Red Bull", "Red Bull", 80, new BigDecimal("200"), 20);
         }
     }
     

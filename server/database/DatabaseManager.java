@@ -93,7 +93,7 @@ public class DatabaseManager {
     }
     
     // Drink operations
-    public Drink addDrink(String name, String brand, String size, BigDecimal price) throws SQLException {
+    public Drink addDrink(String name, String brand, int quantity, BigDecimal price,int min_threshold) throws SQLException {
         Connection conn = null;
         try {
             conn = getConnection();
@@ -103,22 +103,20 @@ public class DatabaseManager {
             int drinkNameId = getOrCreateDrinkName(conn, name);
             
             // Then, ensure drink_sizes entry exists
-            int sizeId = getOrCreateDrinkSize(conn, size);
             
             // Finally, create the drink
-            String sql = "INSERT INTO drinks (drink_name_id, size_id, brand, price) VALUES (?, ?, ?, ?)";
+            String sql = "INSERT INTO drinks (drink_name_id, brand, price) VALUES (?, ?, ?)";
             try (PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
                 stmt.setInt(1, drinkNameId);
-                stmt.setInt(2, sizeId);
-                stmt.setString(3, brand);
-                stmt.setBigDecimal(4, price);
+                stmt.setString(2, brand);
+                stmt.setBigDecimal(3, price);
                 stmt.executeUpdate();
                 
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 if (generatedKeys.next()) {
                     int drinkId = generatedKeys.getInt(1);
                     conn.commit();
-                    return new Drink(drinkId, name, brand, size, price);
+                    return new Drink(drinkId, name, brand, price, quantity,min_threshold);
                 } else {
                     throw new SQLException("Creating drink failed, no ID obtained");
                 }
@@ -207,14 +205,15 @@ public class DatabaseManager {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
-            
             if (rs.next()) {
                 return new Drink(
                     rs.getInt("drink_id"),
                     rs.getString("drink_name"),
                     rs.getString("brand"),
-                    rs.getString("size"),
-                    rs.getBigDecimal("price")
+                    rs.getBigDecimal("price"),
+                    rs.getInt("quantityavailable"),
+                    50
+                    
                 );
             }
             return null;
@@ -240,8 +239,10 @@ public class DatabaseManager {
                     rs.getInt("drink_id"),
                     rs.getString("drink_name"),
                     rs.getString("brand"),
-                    rs.getString("size"),
-                    rs.getBigDecimal("price")
+                    rs.getBigDecimal("price"),
+                    rs.getInt("quantityavailable"),
+                    50
+                    
                 ));
             }
         }
@@ -256,15 +257,14 @@ public class DatabaseManager {
             
             // Get or create drink name and size IDs
             int drinkNameId = getOrCreateDrinkName(conn, drink.getName());
-            int sizeId = getOrCreateDrinkSize(conn, drink.getSize());
             
-            String sql = "UPDATE drinks SET drink_name_id = ?, size_id = ?, brand = ?, price = ? WHERE drink_id = ?";
+            
+            String sql = "UPDATE drinks SET drink_name_id = ?, brand = ?, price = ? WHERE drink_id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setInt(1, drinkNameId);
-                stmt.setInt(2, sizeId);
-                stmt.setString(3, drink.getBrand());
-                stmt.setBigDecimal(4, drink.getPrice());
-                stmt.setInt(5, drink.getId());
+                stmt.setString(2, drink.getBrand());
+                stmt.setBigDecimal(3, drink.getPrice());
+                stmt.setInt(4, drink.getId());
                 
                 int rowsAffected = stmt.executeUpdate();
                 if (rowsAffected == 0) {
@@ -394,12 +394,11 @@ public class DatabaseManager {
     
     // Branch operations
     public Branch addBranch(Branch branch) throws SQLException {
-        String sql = "INSERT INTO branches (name, location, phone) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO branches (name, location) VALUES ( ?, ?)";
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, branch.getName());
             stmt.setString(2, branch.getLocation());
-            stmt.setString(3, branch.getPhone());
             stmt.executeUpdate();
             
             ResultSet generatedKeys = stmt.getGeneratedKeys();
@@ -424,7 +423,8 @@ public class DatabaseManager {
                     rs.getInt("branch_id"),
                     rs.getString("name"),
                     rs.getString("location"),
-                    rs.getString("phone")
+                    rs.getString("phone"),
+                    5002
                 );
             }
             return null;
@@ -444,7 +444,8 @@ public class DatabaseManager {
                     rs.getInt("branch_id"),
                     rs.getString("name"),
                     rs.getString("location"),
-                    rs.getString("phone")
+                    rs.getString("phone"),
+                    5002
                 );
             }
             return null;
@@ -464,7 +465,8 @@ public class DatabaseManager {
                     rs.getInt("branch_id"),
                     rs.getString("name"),
                     rs.getString("location"),
-                    rs.getString("phone")
+                    rs.getString("phone"),
+                    5002
                 ));
             }
         }
@@ -472,13 +474,12 @@ public class DatabaseManager {
     }
     
     public void updateBranch(Branch branch) throws SQLException {
-        String sql = "UPDATE branches SET name = ?, location = ?, phone = ? WHERE branch_id = ?";
+        String sql = "UPDATE branches SET name = ?, location = ? WHERE branch_id = ?";
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, branch.getName());
             stmt.setString(2, branch.getLocation());
-            stmt.setString(3, branch.getPhone());
-            stmt.setInt(4, branch.getId());
+            stmt.setInt(3, branch.getId());
             
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected == 0) {
