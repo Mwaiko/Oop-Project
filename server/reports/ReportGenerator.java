@@ -5,6 +5,7 @@ import common.models.Order;
 import server.database.DatabaseManager;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -15,7 +16,7 @@ public class ReportGenerator {
         this.dbManager = dbManager;
     }
     
-    public SalesReport generateBranchSalesReport(String branchName) {
+    public SalesReport generateBranchSalesReport(String branchName) throws SQLException {
         List<Order> branchOrders = dbManager.getOrdersByBranch(branchName);
         BigDecimal totalSales = dbManager.getTotalSalesByBranch(branchName);
         
@@ -27,7 +28,7 @@ public class ReportGenerator {
         return report;
     }
     
-    public CustomerOrdersReport generateCustomerOrdersReport() {
+    public CustomerOrdersReport generateCustomerOrdersReport() throws SQLException{
         List<Order> allOrders = dbManager.getAllOrders();
         Map<Integer, List<Order>> ordersByCustomer = allOrders.stream()
                 .collect(Collectors.groupingBy(o -> o.getCustomer().getId()));
@@ -38,7 +39,7 @@ public class ReportGenerator {
         return report;
     }
     
-    public TotalSalesReport generateTotalSalesReport() {
+    public TotalSalesReport generateTotalSalesReport() throws SQLException  {
         TotalSalesReport report = new TotalSalesReport();
         
         // Get all branches

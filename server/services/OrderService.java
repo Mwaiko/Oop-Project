@@ -1,5 +1,7 @@
 package server.services;
 
+import java.sql.SQLException;
+
 import common.models.Order;
 import server.database.DatabaseManager;
 import server.inventory.InventoryManager;
@@ -13,7 +15,7 @@ public class OrderService {
         this.inventoryManager = inventoryManager;
     }
     
-    public boolean processOrder(Order order) {
+    public boolean processOrder(Order order) throws SQLException {
         // Verify customer exists or create new one
         if (order.getCustomer().getId() == 0) {
             order.setCustomer(dbManager.addCustomer(order.getCustomer()));
@@ -25,7 +27,6 @@ public class OrderService {
             return false;
         }
         
-        // Complete the order
         order.setStatus(Order.STATUS_COMPLETED);
         dbManager.addOrder(order);
         
@@ -35,7 +36,7 @@ public class OrderService {
         return true;
     }
     
-    private void checkLowStockLevels() {
+    private void checkLowStockLevels() throws SQLException {
         // In a real application, this would send alerts to administrators
         inventoryManager.getDrinksBelowThreshold().forEach(drink -> 
             System.out.println("ALERT: " + drink.getName() + " is below threshold! Current stock: " 

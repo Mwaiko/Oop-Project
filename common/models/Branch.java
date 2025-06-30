@@ -11,7 +11,7 @@ public class Branch implements Serializable {
     public static final String BRANCH_KISUMU = "Kisumu";
     
     private int id;
-    private String name;
+    public String name;
     private String location;
     private String ipAddress;
     private int port;

@@ -8,6 +8,7 @@ import server.services.OrderService;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +38,7 @@ public class HeadquartersServer {
         executorService = Executors.newFixedThreadPool(MAX_THREADS);
     }
     
-    public void start() {
+    public void start(){
         try {
             serverSocket = new ServerSocket(PORT);
             running = true;
@@ -71,20 +72,25 @@ public class HeadquartersServer {
     }
     
     private void initializeSystemData() {
-        // Initialize branches
-        if (dbManager.getAllBranches().isEmpty()) {
-            dbManager.addBranch(new Branch(1, "Headquarters", Branch.HEADQUARTERS, "localhost", 5000));
-            dbManager.addBranch(new Branch(2, "Nakuru Branch", Branch.BRANCH_NAKURU, "localhost", 5001));
-            dbManager.addBranch(new Branch(3, "Mombasa Branch", Branch.BRANCH_MOMBASA, "localhost", 5002));
-            dbManager.addBranch(new Branch(4, "Kisumu Branch", Branch.BRANCH_KISUMU, "localhost", 5003));
+        try{
+             // Initialize branches
+            if (dbManager.getAllBranches().isEmpty()) {
+                dbManager.addBranch(new Branch(1, "Headquarters", Branch.HEADQUARTERS, "localhost", 5000));
+                dbManager.addBranch(new Branch(2, "Nakuru Branch", Branch.BRANCH_NAKURU, "localhost", 5001));
+                dbManager.addBranch(new Branch(3, "Mombasa Branch", Branch.BRANCH_MOMBASA, "localhost", 5002));
+                dbManager.addBranch(new Branch(4, "Kisumu Branch", Branch.BRANCH_KISUMU, "localhost", 5003));
+            }
+            
+            // Initialize sample drinks
+            inventoryManager.initializeSampleDrinks();
+        }catch(SQLException e){
+            System.err.println(e);
         }
-        
-        // Initialize sample drinks
-        inventoryManager.initializeSampleDrinks();
+       
     }
     
     // Send stock updates to all branches
-    public void broadcastInventoryUpdate() {
+    public void broadcastInventoryUpdate() throws SQLException{
         List<Drink> drinks = inventoryManager.getAllDrinks();
         NetworkMessage message = new NetworkMessage(
                 NetworkMessage.TYPE_INVENTORY_UPDATE,
@@ -149,42 +155,47 @@ public class HeadquartersServer {
         }
         
         private void processMessage(NetworkMessage message) {
-            switch (message.getType()) {
-                case NetworkMessage.TYPE_ORDER:
-                    Order order = (Order) message.getPayload();
-                    boolean success = orderService.processOrder(order);
-                    
-                    // Respond with status
-                    NetworkMessage response = new NetworkMessage(
-                            NetworkMessage.TYPE_ORDER,
-                            success ? "SUCCESS" : "FAILED",
-                            Branch.HEADQUARTERS,
-                            message.getSourceBranch()
-                    );
-                    sendMessage(response);
-                    
-                    // If inventory changed, broadcast update
-                    if (success) {
-                        broadcastInventoryUpdate();
-                    }
-                    break;
-                    
-                case NetworkMessage.TYPE_REPORT_REQUEST:
-                    String reportType = (String) message.getPayload();
-                    Object reportData = generateReport(reportType, message.getSourceBranch());
-                    
-                    NetworkMessage reportResponse = new NetworkMessage(
-                            NetworkMessage.TYPE_REPORT_RESPONSE,
-                            reportData,
-                            Branch.HEADQUARTERS,
-                            message.getSourceBranch()
-                    );
-                    sendMessage(reportResponse);
-                    break;
+            try{
+                switch (message.getType()) {
+                    case NetworkMessage.TYPE_ORDER:
+                        Order order = (Order) message.getPayload();
+                        boolean success = orderService.processOrder(order);
+                        
+                        // Respond with status
+                        NetworkMessage response = new NetworkMessage(
+                                NetworkMessage.TYPE_ORDER,
+                                success ? "SUCCESS" : "FAILED",
+                                Branch.HEADQUARTERS,
+                                message.getSourceBranch()
+                        );
+                        sendMessage(response);
+                        
+                        // If inventory changed, broadcast update
+                        if (success) {
+                            broadcastInventoryUpdate();
+                        }
+                        break;
+                        
+                    case NetworkMessage.TYPE_REPORT_REQUEST:
+                        String reportType = (String) message.getPayload();
+                        Object reportData = generateReport(reportType, message.getSourceBranch());
+                        
+                        NetworkMessage reportResponse = new NetworkMessage(
+                                NetworkMessage.TYPE_REPORT_RESPONSE,
+                                reportData,
+                                Branch.HEADQUARTERS,
+                                message.getSourceBranch()
+                        );
+                        sendMessage(reportResponse);
+                        break;
+                }
+            }catch(SQLException e){
+                System.err.println(e);
             }
+            
         }
         
-        private Object generateReport(String reportType, String branchName) {
+        private Object generateReport(String reportType, String branchName) throws SQLException {
             switch (reportType) {
                 case "BRANCH_SALES":
                     return reportGenerator.generateBranchSalesReport(branchName);
@@ -197,15 +208,20 @@ public class HeadquartersServer {
             }
         }
         
-        public void sendInventoryUpdate() {
-            List<Drink> drinks = inventoryManager.getAllDrinks();
-            NetworkMessage message = new NetworkMessage(
-                    NetworkMessage.TYPE_INVENTORY_UPDATE,
-                    drinks,
-                    Branch.HEADQUARTERS,
-                    branchName
-            );
-            sendMessage(message);
+        public void sendInventoryUpdate(){
+            try{
+                List<Drink> drinks = inventoryManager.getAllDrinks();
+                NetworkMessage message = new NetworkMessage(
+                        NetworkMessage.TYPE_INVENTORY_UPDATE,
+                        drinks,
+                        Branch.HEADQUARTERS,
+                        branchName
+                );
+                sendMessage(message);
+            }catch(SQLException e){
+                System.err.println(e);
+            }
+            
         }
         
         public void sendMessage(NetworkMessage message) {

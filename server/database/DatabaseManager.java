@@ -1,7 +1,6 @@
 package server.database;
 
 import common.models.*;
-import common.models.Order.OrderItem;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -430,8 +429,8 @@ public class DatabaseManager {
         String sql = "SELECT * FROM branches ORDER BY name";
         
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
                 branches.add(new Branch(
@@ -439,9 +438,13 @@ public class DatabaseManager {
                     rs.getString("name"),
                     rs.getString("location"),
                     rs.getString("phone"),
-                    5002 // This hardcoded port should be configurable
+                    5002 // Get port from configuration
                 ));
             }
+        } catch (SQLException e) {
+            // Log the full error for debugging
+            System.err.println("SQL Error occurred while fetching branches: " + e.getMessage());
+            throw e; // Re-throw to let caller handle the error
         }
         return branches;
     }
@@ -551,5 +554,23 @@ public class DatabaseManager {
             System.err.println("Error calculating total sales: " + e.getMessage());
             return BigDecimal.ZERO;
         }
+    }
+    public BigDecimal getTotalSales() throws SQLException{
+        return BigDecimal.ZERO;
+    }
+    public void addOrder(Order order){
+
+    }
+    public List<Order> getAllOrders() throws SQLException {
+        List<Order> orders = new ArrayList<>();
+        List<Branch> branches = getAllBranches();
+
+        for (int i = 0; i < branches.size(); i++) {
+            Branch branch = branches.get(i);
+            List<Order> branchOrders = getOrdersByBranch(branch.name);
+            orders.addAll(branchOrders);  // Add each branch's orders to the main list
+        }
+
+        return orders;
     }
 }
