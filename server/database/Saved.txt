@@ -1,0 +1,131 @@
+
+private List<OrderItem> getOrderItems(int orderId) throws SQLException {
+    List<OrderItem> items = new ArrayList<>();
+    
+    String sql = """
+        SELECT oi.item_id, oi.drink_id, oi.quantity, oi.price,
+               dn.name as drink_name, ds.size as drink_size
+        FROM order_items oi
+        JOIN drinks d ON oi
+    // Sales analytics methods
+    public BigDecimal getTotalSalesByBranch(int branchId) throws SQLException {
+        String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE branch_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, branchId);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getBigDecimal(1);
+            }
+            return BigDecimal.ZERO;
+        }
+    }
+    
+    public BigDecimal getTotalSales() throws SQLException {
+        String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM orders";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            if (rs.next()) {
+                return rs.getBigDecimal(1);
+            }
+            return BigDecimal.ZERO;
+        }
+    }
+    
+    // Database initialization methods
+    public void initializeSampleData() throws SQLException {
+        initializeSampleCustomers();
+        initializeSampleBranches();
+        initializeSampleDrinks();
+    }
+    
+    public void initializeSampleCustomers() throws SQLException {
+        try (Connection conn = getConnection()) {
+            // Check if customers already exist
+            String checkSql = "SELECT COUNT(*) FROM customers";
+            try (PreparedStatement stmt = conn.prepareStatement(checkSql);
+                 ResultSet rs = stmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return; // Customers already exist
+                }
+            }
+            
+            // Insert sample customers
+            String insertSql = "INSERT INTO customers (full_name, phone, email) VALUES (?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(insertSql)) {
+                stmt.setString(1, "John Doe");
+                stmt.setString(2, "0722123456");
+                stmt.setString(3, "john@example.com");
+                stmt.addBatch();
+                
+                stmt.setString(1, "Jane Smith");
+                stmt.setString(2, "0733987654");
+                stmt.setString(3, "jane@example.com");
+                stmt.addBatch();
+                
+                stmt.setString(1, "Alice Johnson");
+                stmt.setString(2, "0711555666");
+                stmt.setString(3, "alice@example.com");
+                stmt.addBatch();
+                
+                stmt.executeBatch();
+            }
+        }
+    }
+    
+    private void initializeSampleBranches() throws SQLException {
+        try (Connection conn = getConnection()) {
+            // Check if branches already exist
+            String checkSql = "SELECT COUNT(*) FROM branches";
+            try (PreparedStatement stmt = conn.prepareStatement(checkSql);
+                 ResultSet rs = stmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return; // Branches already exist
+                }
+            }
+            
+            // Insert sample branches
+            String insertSql = "INSERT INTO branches (name, location, phone) VALUES (?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(insertSql)) {
+                stmt.setString(1, "Main Branch");
+                stmt.setString(2, "Downtown Nairobi");
+                stmt.setString(3, "0700123456");
+                stmt.addBatch();
+                
+                stmt.setString(1, "Westlands Branch");
+                stmt.setString(2, "Westlands");
+                stmt.setString(3, "0700123457");
+                stmt.addBatch();
+                
+                stmt.setString(1, "Karen Branch");
+                stmt.setString(2, "Karen");
+                stmt.setString(3, "0700123458");
+                stmt.addBatch();
+                
+                stmt.executeBatch();
+            }
+        }
+    }
+    
+    private void initializeSampleDrinks() throws SQLException {
+        try (Connection conn = getConnection()) {
+            // Check if drinks already exist
+            String checkSql = "SELECT COUNT(*) FROM drinks";
+            try (PreparedStatement stmt = conn.prepareStatement(checkSql);
+                 ResultSet rs = stmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return; // Drinks already exist
+                }
+            }
+            
+            // Initialize sample drinks
+            addDrink("Coca Cola", "Coca Cola", 50, new BigDecimal("50"), 10);
+            addDrink("Sprite", "Coca Cola", 150, new BigDecimal("80"), 15);
+            addDrink("Fanta Orange", "Coca Cola", 120, new BigDecimal("80"), 15);
+            addDrink("Still Water 500ml", "Aquamist", 300, new BigDecimal("50"), 50);
+            addDrink("Orange Juice", "Freshly", 80, new BigDecimal("120"), 10);
+        }
+    }

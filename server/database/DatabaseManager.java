@@ -1,6 +1,7 @@
 package server.database;
 
 import common.models.*;
+import common.models.Order.OrderItem;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -93,7 +94,7 @@ public class DatabaseManager {
     }
     
     // Drink operations
-    public Drink addDrink(String name, String brand, int quantity, BigDecimal price,int min_threshold) throws SQLException {
+    public Drink addDrink(String name, String brand, int quantity, BigDecimal price, int minThreshold) throws SQLException {
         Connection conn = null;
         try {
             conn = getConnection();
@@ -102,21 +103,21 @@ public class DatabaseManager {
             // First, ensure drink_names entry exists
             int drinkNameId = getOrCreateDrinkName(conn, name);
             
-            // Then, ensure drink_sizes entry exists
-            
-            // Finally, create the drink
-            String sql = "INSERT INTO drinks (drink_name_id, brand, price) VALUES (?, ?, ?)";
+            // Create the drink
+            String sql = "INSERT INTO drinks (drink_name_id, brand, price, quantity_available, min_threshold) VALUES (?, ?, ?, ?, ?)";
             try (PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
                 stmt.setInt(1, drinkNameId);
                 stmt.setString(2, brand);
                 stmt.setBigDecimal(3, price);
+                stmt.setInt(4, quantity);
+                stmt.setInt(5, minThreshold);
                 stmt.executeUpdate();
                 
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 if (generatedKeys.next()) {
                     int drinkId = generatedKeys.getInt(1);
                     conn.commit();
-                    return new Drink(drinkId, name, brand, price, quantity,min_threshold);
+                    return new Drink(drinkId, name, brand, price, quantity, minThreshold);
                 } else {
                     throw new SQLException("Creating drink failed, no ID obtained");
                 }
@@ -167,37 +168,11 @@ public class DatabaseManager {
         }
     }
     
-    private int getOrCreateDrinkSize(Connection conn, String size) throws SQLException {
-        // Check if size exists
-        String checkSql = "SELECT size_id FROM drink_sizes WHERE size = ?";
-        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-            checkStmt.setString(1, size);
-            ResultSet rs = checkStmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("size_id");
-            }
-        }
-        
-        // Create new size
-        String insertSql = "INSERT INTO drink_sizes (size) VALUES (?)";
-        try (PreparedStatement insertStmt = conn.prepareStatement(insertSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            insertStmt.setString(1, size);
-            insertStmt.executeUpdate();
-            ResultSet generatedKeys = insertStmt.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                return generatedKeys.getInt(1);
-            } else {
-                throw new SQLException("Creating drink size failed, no ID obtained");
-            }
-        }
-    }
-    
     public Drink getDrink(int id) throws SQLException {
         String sql = """
-            SELECT d.drink_id, dn.name as drink_name, d.brand, ds.size, d.price
+            SELECT d.drink_id, dn.name as drink_name, d.brand, d.price, d.quantity_available, d.min_threshold
             FROM drinks d
             JOIN drink_names dn ON d.drink_name_id = dn.drink_name_id
-            JOIN drink_sizes ds ON d.size_id = ds.size_id
             WHERE d.drink_id = ?
         """;
         
@@ -211,9 +186,8 @@ public class DatabaseManager {
                     rs.getString("drink_name"),
                     rs.getString("brand"),
                     rs.getBigDecimal("price"),
-                    rs.getInt("quantityavailable"),
-                    50
-                    
+                    rs.getInt("quantity_available"),
+                    rs.getInt("min_threshold")
                 );
             }
             return null;
@@ -223,11 +197,10 @@ public class DatabaseManager {
     public List<Drink> getAllDrinks() throws SQLException {
         List<Drink> drinks = new ArrayList<>();
         String sql = """
-            SELECT d.drink_id, dn.name as drink_name, d.brand, ds.size, d.price
+            SELECT d.drink_id, dn.name as drink_name, d.brand, d.price, d.quantity_available, d.min_threshold
             FROM drinks d
             JOIN drink_names dn ON d.drink_name_id = dn.drink_name_id
-            JOIN drink_sizes ds ON d.size_id = ds.size_id
-            ORDER BY dn.name, d.brand, ds.size
+            ORDER BY dn.name, d.brand
         """;
         
         try (Connection conn = getConnection();
@@ -240,9 +213,8 @@ public class DatabaseManager {
                     rs.getString("drink_name"),
                     rs.getString("brand"),
                     rs.getBigDecimal("price"),
-                    rs.getInt("quantityavailable"),
-                    50
-                    
+                    rs.getInt("quantity_available"),
+                    rs.getInt("min_threshold")
                 ));
             }
         }
@@ -255,16 +227,17 @@ public class DatabaseManager {
             conn = getConnection();
             conn.setAutoCommit(false);
             
-            // Get or create drink name and size IDs
+            // Get or create drink name ID
             int drinkNameId = getOrCreateDrinkName(conn, drink.getName());
             
-            
-            String sql = "UPDATE drinks SET drink_name_id = ?, brand = ?, price = ? WHERE drink_id = ?";
+            String sql = "UPDATE drinks SET drink_name_id = ?, brand = ?, price = ?, quantity_available = ?, min_threshold = ? WHERE drink_id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setInt(1, drinkNameId);
                 stmt.setString(2, drink.getBrand());
                 stmt.setBigDecimal(3, drink.getPrice());
-                stmt.setInt(4, drink.getId());
+                stmt.setInt(4, drink.getQuantityAvailable());
+                stmt.setInt(5, drink.getMinThreshold());
+                stmt.setInt(6, drink.getId());
                 
                 int rowsAffected = stmt.executeUpdate();
                 if (rowsAffected == 0) {
@@ -394,7 +367,7 @@ public class DatabaseManager {
     
     // Branch operations
     public Branch addBranch(Branch branch) throws SQLException {
-        String sql = "INSERT INTO branches (name, location) VALUES ( ?, ?)";
+        String sql = "INSERT INTO branches (name, location) VALUES (?, ?)";
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, branch.getName());
@@ -424,7 +397,7 @@ public class DatabaseManager {
                     rs.getString("name"),
                     rs.getString("location"),
                     rs.getString("phone"),
-                    5002
+                    5002 // This hardcoded port should be configurable
                 );
             }
             return null;
@@ -445,7 +418,7 @@ public class DatabaseManager {
                     rs.getString("name"),
                     rs.getString("location"),
                     rs.getString("phone"),
-                    5002
+                    5002 // This hardcoded port should be configurable
                 );
             }
             return null;
@@ -466,7 +439,7 @@ public class DatabaseManager {
                     rs.getString("name"),
                     rs.getString("location"),
                     rs.getString("phone"),
-                    5002
+                    5002 // This hardcoded port should be configurable
                 ));
             }
         }
@@ -479,7 +452,7 @@ public class DatabaseManager {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, branch.getName());
             stmt.setString(2, branch.getLocation());
-            stmt.setInt(3, branch.getId());
+            stmt.setInt(4, branch.getId());
             
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected == 0) {
@@ -499,112 +472,117 @@ public class DatabaseManager {
             }
         }
     }
+    public int getBranchId(String branchName) throws SQLException {
+    String sql = "SELECT branch_id FROM branches WHERE name = ?";
+    try (Connection conn = getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setString(1, branchName);
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);  // Correct method is getInt(), not int()
+            }
+        }
+    }
+    throw new SQLException("Branch not found with name: " + branchName);
+}
+    public List<Order> getOrdersByBranch(String branchName) throws SQLException {
+    int branchId = getBranchId(branchName);
+    List<Order> orders = new ArrayList<>();
     
-    // Sales analytics methods
+    String sql = """
+        SELECT o.order_id, o.customer_id, o.order_date, o.total_amount, o.status,
+               c.full_name as customer_name, c.phone as customer_phone
+        FROM orders o
+        JOIN customers c ON o.customer_id = c.customer_id
+        WHERE o.branch_id = ?
+        ORDER BY o.order_date DESC
+    """;
+    
+    try (Connection conn = getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setInt(1, branchId);
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Customer customer = new Customer(rs.getInt("customer_id"),rs.getString("customer_name"),rs.getString("customer_phone"), rs.getString("email"));
+
+                Branch branch = new Branch(branchId, branchName, branchName, sql, branchId);
+                Order order = new Order(
+                    rs.getInt("order_id"),
+                    customer,
+                    branch
+                );
+                
+               
+                
+                
+                orders.add(order);
+            }
+        }
+    }
+    return orders;
+}
     public BigDecimal getTotalSalesByBranch(int branchId) throws SQLException {
         String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE branch_id = ?";
+        
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, branchId);
-            ResultSet rs = stmt.executeQuery();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            if (rs.next()) {
-                return rs.getBigDecimal(1);
+            stmt.setInt(1, branchId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBigDecimal(1);
+                }
             }
-            return BigDecimal.ZERO;
         }
+        return BigDecimal.ZERO;
     }
-    
     public BigDecimal getTotalSales() throws SQLException {
         String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM orders";
+        
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery()) {
             
             if (rs.next()) {
                 return rs.getBigDecimal(1);
             }
-            return BigDecimal.ZERO;
         }
+        return BigDecimal.ZERO;
     }
+    public List<Order> getAllOrders() throws SQLException {
+    List<Order> orders = new ArrayList<>();
     
-    // Database initialization methods
-    public void initializeSampleData() throws SQLException {
-        initializeSampleCustomers();
-        initializeSampleBranches();
-        initializeSampleDrinks();
-    }
+    String sql = """
+        SELECT o.order_id, o.customer_id, o.branch_id, o.order_date, 
+               o.total_amount, o.status, c.full_name as customer_name,
+               b.name as branch_name
+        FROM orders o
+        JOIN customers c ON o.customer_id = c.customer_id
+        JOIN branches b ON o.branch_id = b.branch_id
+        ORDER BY o.order_date DESC
+    """;
     
-    public void initializeSampleCustomers() throws SQLException {
-        try (Connection conn = getConnection()) {
-            // Check if customers already exist
-            String checkSql = "SELECT COUNT(*) FROM customers";
-            try (PreparedStatement stmt = conn.prepareStatement(checkSql);
-                 ResultSet rs = stmt.executeQuery()) {
-                if (rs.next() && rs.getInt(1) > 0) {
-                    return; // Customers already exist
-                }
-            }
+    try (Connection conn = getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql);
+         ResultSet rs = stmt.executeQuery()) {
+        
+        while (rs.next()) {
+            Customer customer = new Customer(rs.getInt("customer_id"),rs.getString("customer_name"),rs.getString("customer_phone"), rs.getString("email"));
             
-            // Insert sample customers
-            String insertSql = "INSERT INTO customers (full_name, phone, email) VALUES (?, ?, ?)";
-            try (PreparedStatement stmt = conn.prepareStatement(insertSql)) {
-                stmt.setString(1, "John Doe");
-                stmt.setString(2, "0722123456");
-                stmt.setString(3, "john@example.com");
-                stmt.addBatch();
-                
-                stmt.setString(1, "Jane Smith");
-                stmt.setString(2, "0733987654");
-                stmt.setString(3, "jane@example.com");
-                stmt.addBatch();
-                
-                stmt.setString(1, "Alice Johnson");
-                stmt.setString(2, "0711555666");
-                stmt.setString(3, "alice@example.com");
-                stmt.addBatch();
-                
-                stmt.executeBatch();
-            }
-        }
-    }
-    
-    private void initializeSampleBranches() throws SQLException {
-        try (Connection conn = getConnection()) {
-            // Check if branches already exist
-            String checkSql = "SELECT COUNT(*) FROM branches";
-            try (PreparedStatement stmt = conn.prepareStatement(checkSql);
-                 ResultSet rs = stmt.executeQuery()) {
-                if (rs.next() && rs.getInt(1) > 0) {
-                    return; // Branches already exist
-                }
-            }
+            Branch branch = new Branch(branchId, branchName, branchName, sql, branchId);
+            Order order = new Order(
+                    rs.getInt("order_id"),
+                    customer,
+                    branch
+            );
             
-            // Insert sample branches
-            String insertSql = "INSERT INTO branches (name, location, phone) VALUES (?, ?, ?)";
-            try (PreparedStatement stmt = conn.prepareStatement(insertSql)) {
-                stmt.setString(1, "Main Branch");
-                stmt.setString(2, "Downtown Nairobi");
-                stmt.setString(3, "0700123456");
-                stmt.addBatch();
-                
-                stmt.setString(1, "Westlands Branch");
-                stmt.setString(2, "Westlands");
-                stmt.setString(3, "0700123457");
-                stmt.addBatch();
-                
-                stmt.setString(1, "Karen Branch");
-                stmt.setString(2, "Karen");
-                stmt.setString(3, "0700123458");
-                stmt.addBatch();
-                
-                stmt.executeBatch();
-            }
+           
+            
+            orders.add(order);
         }
     }
-    
-    private void initializeSampleDrinks() throws SQLException {
-        // This would initialize sample drink names, sizes, and drinks
-        // Implementation depends on your specific drink structure
-    }
+    return orders;
+}
 }
