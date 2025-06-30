@@ -2,7 +2,7 @@ package server.inventory;
 import java.sql.*;
 import java.util.*;
 
-import DBManager;
+
 
 public class StockManager {
     private DBManager dbManager;

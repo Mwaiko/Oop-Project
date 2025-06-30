@@ -1,3 +1,4 @@
+package common.utils;
 import java.util.List;
 
 public class ReportFormatter {

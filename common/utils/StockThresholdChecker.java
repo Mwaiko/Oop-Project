@@ -1,3 +1,4 @@
+package common.utils;
 public class StockThresholdChecker {
     private static final int THRESHOLD = 10; // Example threshold
 
