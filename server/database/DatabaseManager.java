@@ -473,116 +473,56 @@ public class DatabaseManager {
         }
     }
     public int getBranchId(String branchName) throws SQLException {
-    String sql = "SELECT branch_id FROM branches WHERE name = ?";
-    try (Connection conn = getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-        
-        stmt.setString(1, branchName);
-        try (ResultSet rs = stmt.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt(1);  // Correct method is getInt(), not int()
+        String sql = "SELECT branch_id FROM branches WHERE name = ?";
+        try (Connection conn = getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, branchName);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);  // Correct method is getInt(), not int()
+                }
             }
         }
+        throw new SQLException("Branch not found with name: " + branchName);
     }
-    throw new SQLException("Branch not found with name: " + branchName);
-}
     public List<Order> getOrdersByBranch(String branchName) throws SQLException {
-    int branchId = getBranchId(branchName);
-    List<Order> orders = new ArrayList<>();
-    
-    String sql = """
-        SELECT o.order_id, o.customer_id, o.order_date, o.total_amount, o.status,
-               c.full_name as customer_name, c.phone as customer_phone
-        FROM orders o
-        JOIN customers c ON o.customer_id = c.customer_id
-        WHERE o.branch_id = ?
-        ORDER BY o.order_date DESC
-    """;
-    
-    try (Connection conn = getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        int branchId = getBranchId(branchName);
+        List<Order> orders = new ArrayList<>();
         
-        stmt.setInt(1, branchId);
-        try (ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Customer customer = new Customer(rs.getInt("customer_id"),rs.getString("customer_name"),rs.getString("customer_phone"), rs.getString("email"));
-
-                Branch branch = new Branch(branchId, branchName, branchName, sql, branchId);
-                Order order = new Order(
-                    rs.getInt("order_id"),
-                    customer,
-                    branch
-                );
-                
-               
-                
-                
-                orders.add(order);
-            }
-        }
-    }
-    return orders;
-}
-    public BigDecimal getTotalSalesByBranch(int branchId) throws SQLException {
-        String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE branch_id = ?";
+        String sql = """
+            SELECT o.order_id, o.customer_id, o.order_date, o.total_amount, o.status,
+                c.full_name as customer_name, c.phone as customer_phone
+            FROM orders o
+            JOIN customers c ON o.customer_id = c.customer_id
+            WHERE o.branch_id = ?
+            ORDER BY o.order_date DESC
+        """;
         
         try (Connection conn = getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, branchId);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getBigDecimal(1);
+                while (rs.next()) {
+                    Customer customer = new Customer(rs.getInt("customer_id"),rs.getString("customer_name"),rs.getString("customer_phone"), rs.getString("email"));
+
+                    Branch branch = new Branch(branchId, branchName, branchName, sql, branchId);
+                    Order order = new Order(
+                        rs.getInt("order_id"),
+                        customer,
+                        branch
+                    );
+                    
+                
+                    
+                    
+                    orders.add(order);
                 }
             }
         }
-        return BigDecimal.ZERO;
+        return orders;
     }
-    public BigDecimal getTotalSales() throws SQLException {
-        String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM orders";
-        
-        try (Connection conn = getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery()) {
-            
-            if (rs.next()) {
-                return rs.getBigDecimal(1);
-            }
-        }
-        return BigDecimal.ZERO;
-    }
-    public List<Order> getAllOrders() throws SQLException {
-    List<Order> orders = new ArrayList<>();
     
-    String sql = """
-        SELECT o.order_id, o.customer_id, o.branch_id, o.order_date, 
-               o.total_amount, o.status, c.full_name as customer_name,
-               b.name as branch_name
-        FROM orders o
-        JOIN customers c ON o.customer_id = c.customer_id
-        JOIN branches b ON o.branch_id = b.branch_id
-        ORDER BY o.order_date DESC
-    """;
     
-    try (Connection conn = getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql);
-         ResultSet rs = stmt.executeQuery()) {
-        
-        while (rs.next()) {
-            Customer customer = new Customer(rs.getInt("customer_id"),rs.getString("customer_name"),rs.getString("customer_phone"), rs.getString("email"));
-            
-            Branch branch = new Branch(branchId, branchName, branchName, sql, branchId);
-            Order order = new Order(
-                    rs.getInt("order_id"),
-                    customer,
-                    branch
-            );
-            
-           
-            
-            orders.add(order);
-        }
-    }
-    return orders;
-}
 }
