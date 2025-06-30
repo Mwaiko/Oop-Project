@@ -519,10 +519,37 @@ public class DatabaseManager {
                     
                     orders.add(order);
                 }
+            }catch(SQLException e){
+                System.err.println("Error Getting OrderS by Branch " + e.getMessage());
+        
             }
+        }catch(SQLException e){
+            System.err.println("Error Getting OrderS by Branch " + e.getMessage());
+            return orders;
         }
         return orders;
     }
     
-    
+    public BigDecimal getTotalSalesByBranch(String branchName) {
+        try {
+            int branchId = getBranchId(branchName);
+            String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE branch_id = ?";
+            
+            try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setInt(1, branchId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getBigDecimal(1);
+                    }
+                }
+            }
+            return BigDecimal.ZERO;
+        } catch (SQLException e) {
+            // Log the error and return zero
+            System.err.println("Error calculating total sales: " + e.getMessage());
+            return BigDecimal.ZERO;
+        }
+    }
 }
