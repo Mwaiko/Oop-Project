@@ -2,7 +2,7 @@ package common.network;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
+import common.models.Order;
 public class Message implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -264,7 +264,7 @@ public class Message implements Serializable {
         Message msg = new Message(messageId, branchId, customerId, "BRANCH", "CUSTOMER", MessageType.ORDER_CONFIRMATION);
         msg.setSubject("Order Confirmation");
         msg.setContent("Your order has been " +
-                (order.getStatus() == Order.OrderStatus.COMPLETED ? "completed" : "processed") + ".");
+                (order.getStatus() == Order.OrderStatus ? "completed" : "processed") + ".");
         msg.setData(order);
         msg.setPriority(MessagePriority.NORMAL);
         return msg;

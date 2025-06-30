@@ -2,13 +2,15 @@ package server.inventory;
 import java.sql.*;
 import java.util.*;
 
+import server.database.DatabaseManager;
+
 
 
 public class StockManager {
-    private DBManager dbManager;
+    private DatabaseManager dbManager;
 
     public StockManager() {
-        this.dbManager = DBManager.getInstance();
+        this.dbManager = new DatabaseManager();
     }
 
     // Get all stock for a branch

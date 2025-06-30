@@ -4,15 +4,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import DBManager;
+import server.database.DatabaseManager;
+
 
 import java.math.BigDecimal;
 
 public class SalesReport {
-    private DBManager dbManager;
+    private DatabaseManager dbManager;
 
     public SalesReport() {
-        this.dbManager = DBManager.getInstance();
+        this.dbManager = new DatabaseManager();
     }
 
     public void generateDailyReport(String date) {

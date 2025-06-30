@@ -4,11 +4,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import server.database.DatabaseManager;
+
 public class InventoryNotifier {
-    private DBManager dbManager;
+    private DatabaseManager dbManager;
 
     public InventoryNotifier() {
-        this.dbManager = DBManager.getInstance();
+        this.dbManager = new DatabaseManager();
     }
 
     public void checkAndNotify() {

@@ -18,7 +18,7 @@ public class InventoryManager {
     public void initializeSampleDrinks() {
         if (dbManager.getAllDrinks().isEmpty()) {
             // Sodas
-            dbManager.addDrink(new Drink(0, "Coca Cola", "Coca Cola", new BigDecimal("80"), 200, 50));
+            dbManager.addDrink("Coca Cola", "Coca Cola", new BigDecimal("80"), 200, 50);
             dbManager.addDrink(new Drink(0, "Sprite", "Coca Cola", new BigDecimal("80"), 150, 40));
             dbManager.addDrink(new Drink(0, "Fanta Orange", "Coca Cola", new BigDecimal("80"), 120, 30));
             dbManager.addDrink(new Drink(0, "Fanta Pineapple", "Coca Cola", new BigDecimal("80"), 100, 30));

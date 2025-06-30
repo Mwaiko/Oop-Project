@@ -1,5 +1,4 @@
 package common.models;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,7 +13,7 @@ public class Order implements Serializable {
     private Branch branch;
     private List<OrderItem> items;
     private LocalDateTime orderDate;
-    private String status;
+    public static String OrderStatus;
     
     public static final String STATUS_PENDING = "PENDING";
     public static final String STATUS_COMPLETED = "COMPLETED";
@@ -26,7 +25,7 @@ public class Order implements Serializable {
         this.branch = branch;
         this.items = new ArrayList<>();
         this.orderDate = LocalDateTime.now();
-        this.status = STATUS_PENDING;
+        this.OrderStatus = STATUS_PENDING;
     }
     
     // Getters and setters
@@ -45,8 +44,8 @@ public class Order implements Serializable {
     public LocalDateTime getOrderDate() { return orderDate; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
     
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getStatus() { return OrderStatus; }
+    public void setStatus(String status) { this.OrderStatus = status; }
     
     // Helper methods
     public void addItem(Drink drink, int quantity) {

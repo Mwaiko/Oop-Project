@@ -2,7 +2,7 @@ package common.network;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
+import common.models.Order;
 public class Response implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -263,9 +263,9 @@ public class Response implements Serializable {
         Response response = new Response(responseId, originalMessageId, branchId, customerId,
                 "BRANCH", "CUSTOMER", ResponseType.ORDER_PROCESSED);
 
-        if (processedOrder.getStatus() == Order.OrderStatus.COMPLETED) {
+        if (processedOrder.getStatus() == Order.OrderStatus) {
             response.markAsSuccess("Your order has been successfully processed and completed.");
-        } else if (processedOrder.getStatus() == Order.OrderStatus.PROCESSING) {
+        } else if (processedOrder.getStatus() == Order.OrderStatus) {
             response.markAsPartialSuccess("Your order is being processed.");
         } else {
             response.markAsFailure("Order could not be processed.");
@@ -302,7 +302,7 @@ public class Response implements Serializable {
     }
 
     public static Response createCustomerRegisteredResponse(String responseId, String originalMessageId,
-                                                            String branchId, String customerId, Customer customer) {
+                                                            String branchId, String customerId, String customer) {
         Response response = new Response(responseId, originalMessageId, branchId, customerId,
                 "BRANCH", "CUSTOMER", ResponseType.CUSTOMER_REGISTERED);
         response.markAsSuccess("Customer registration successful.");

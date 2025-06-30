@@ -3,23 +3,23 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import server.database.DatabaseManager;
 
-import DBManager;
 import server.inventory.StockManager;
 
 import java.math.BigDecimal;
 
 public class OrderProcessor {
-    private DBManager dbManager;
+    private DatabaseManager dbManager;
     private StockManager stockManager;
 
     public OrderProcessor() {
-        this.dbManager = DBManager.getInstance();
+        this.dbManager = new DatabaseManager();
         this.stockManager = new StockManager();
     }
 
     public OrderProcessor(StockManager stockManager) {
-        this.dbManager = DBManager.getInstance();
+        this.dbManager =  new DatabaseManager();
         this.stockManager = stockManager;
     }
 
