@@ -1,3 +1,4 @@
+package client.gui;
 import java.util.*;
 
 public class FetchInventory {

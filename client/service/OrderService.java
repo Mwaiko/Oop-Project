@@ -1,3 +1,4 @@
+package client.service;
 import java.util.List;
 interface HeadquartersService {
     void placeOrder(Order order, String requestingBranchId) throws HQOrderException;
