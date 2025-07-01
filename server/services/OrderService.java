@@ -10,7 +10,7 @@ public class OrderService {
     private DatabaseManager dbManager;
     private InventoryManager inventoryManager;
     
-    public OrderService(DatabaseManager dbManager, InventoryManager inventoryManager) {
+    public OrderService() {
         this.dbManager = dbManager;
         this.inventoryManager = inventoryManager;
     }

@@ -23,7 +23,7 @@ public class OrderProcessor {
         this.stockManager = stockManager;
     }
 
-    public boolean placeOrder(int customerId, int branchId, int[] drinkIds, int[] quantities) {
+    public boolean placeOrder(String customerName, int branchId, int[] drinkIds, int[] quantities) {
         if (drinkIds.length != quantities.length) {
             System.err.println("Drink IDs and quantities arrays must have the same length");
             return false;
@@ -35,8 +35,8 @@ public class OrderProcessor {
             conn.setAutoCommit(false);
 
             // First validate customer exists
-            if (!customerExists(conn, customerId)) {
-                System.err.println("Customer ID " + customerId + " does not exist");
+            if (!customerExists(conn, customerName)) {
+                System.err.println("Customer ID " + customerName + " does not exist");
                 conn.rollback();
                 return false;
             }
@@ -52,12 +52,12 @@ public class OrderProcessor {
             }
 
             // Create order
-            String orderSql = "INSERT INTO orders (customer_id, branch_id, order_date, total_amount) VALUES (?, ?, NOW(), ?)";
+            String orderSql = "INSERT INTO orders (customer_Name, branch_id, order_date, total_amount) VALUES (?, ?, NOW(), ?)";
             BigDecimal totalAmount = calculateOrderTotal(conn, drinkIds, quantities);
 
             int orderId;
             try (PreparedStatement orderStmt = conn.prepareStatement(orderSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
-                orderStmt.setInt(1, customerId);
+                orderStmt.setString (1, customerName);
                 orderStmt.setInt(2, branchId);
                 orderStmt.setBigDecimal(3, totalAmount);
                 orderStmt.executeUpdate();
@@ -118,10 +118,10 @@ public class OrderProcessor {
         }
     }
 
-    private boolean customerExists(Connection conn, int customerId) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM customers WHERE customer_id = ?";
+    private boolean customerExists(Connection conn, String customerName) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM customers WHERE customer_Name = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, customerId);
+            pstmt.setString(1, customerName);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 return rs.getInt(1) > 0;

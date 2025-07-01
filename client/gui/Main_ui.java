@@ -3,10 +3,16 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
-
+import java.util.List;
+import server.inventory.InventoryManager;
+import common.models.Order;
+import common.models.Branch;
+import common.models.Drink;
+import server.services.OrderProcessor;
 public class Main_ui extends JFrame {
    
     private JTextField nameField;
@@ -16,29 +22,157 @@ public class Main_ui extends JFrame {
     private JSpinner quantitySpinner;
     private JButton submitButton;
     ArrayList<Map<String, String>> inventory;
+    public Branch branch;
     private Map<String, Double> drinkPrices;
     
-    public Main_ui() {
+    public Main_ui(Branch branch) {
+        this.branch = branch;
         initializeDrinkPrices();
         setupGUI();
         
     }
     
-    private void initializeDrinkPrices() {
-        inventory = new FetchInventory().get();
-        drinkPrices = new HashMap<>();
-        drinkPrices.put("Select Drink", 0.0);
-        for (Map<String, String> item : inventory) {
-            drinkPrices.put((item.get("item_name")), Double.parseDouble(item.get("price")));
+    private void initializeDrinkPrices()  {
+        try {
+            List<Drink> inventory = new InventoryManager().getAllDrinks();
+            drinkPrices = new HashMap<>();
+            drinkPrices.put("Select Drink", 0.0);
+            for (int i = 0; i < inventory.size(); i++) {
+                Drink drink = inventory.get(i);
+                drinkPrices.put(drink.getName(),drink.getPrice().doubleValue());
+            }
+        }catch(SQLException e){
+            e.printStackTrace();
         }
         
+        
+        
     }
-    
+    private JPanel drinkSelectionPanel;
+    private JScrollPane drinkScrollPane;
+    private JLabel totalPriceLabel;
+    private java.util.List<DrinkSelection> drinkSelections;
+
+    // Inner class to represent a drink selection
+    private class DrinkSelection {
+        JComboBox<String> drinkComboBox;
+        JLabel unitPriceLabel;
+        JSpinner quantitySpinner;
+        JButton removeButton;
+        JPanel panel;
+        
+        public DrinkSelection() {
+            panel = new JPanel(new GridBagLayout());
+            panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            ));
+            panel.setBackground(Color.WHITE);
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(5, 5, 5, 5);
+            gbc.anchor = GridBagConstraints.WEST;
+            
+            // Drink selection
+            JLabel drinkLabel = new JLabel("Drink:");
+            drinkLabel.setFont(new Font("Arial", Font.BOLD, 12));
+            gbc.gridx = 0; gbc.gridy = 0;
+            panel.add(drinkLabel, gbc);
+            
+            String[] drinks = drinkPrices.keySet().toArray(new String[0]);
+            drinkComboBox = new JComboBox<>(drinks);
+            drinkComboBox.setFont(new Font("Arial", Font.PLAIN, 12));
+            drinkComboBox.setPreferredSize(new Dimension(150, 30));
+            drinkComboBox.setBackground(Color.WHITE);
+            drinkComboBox.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+            
+            drinkComboBox.addActionListener(e -> {
+                updateUnitPriceForSelection(this);
+                updateTotalPrice();
+            });
+            
+            gbc.gridx = 1; gbc.gridy = 0;
+            panel.add(drinkComboBox, gbc);
+            
+            // Unit price
+            JLabel priceLabel = new JLabel("Price:");
+            priceLabel.setFont(new Font("Arial", Font.BOLD, 12));
+            gbc.gridx = 2; gbc.gridy = 0;
+            panel.add(priceLabel, gbc);
+            
+            unitPriceLabel = new JLabel("$0.00");
+            unitPriceLabel.setFont(new Font("Arial", Font.BOLD, 12));
+            unitPriceLabel.setForeground(new Color(34, 139, 34));
+            unitPriceLabel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
+                BorderFactory.createEmptyBorder(5, 8, 5, 8)
+            ));
+            unitPriceLabel.setOpaque(true);
+            unitPriceLabel.setBackground(new Color(248, 248, 248));
+            gbc.gridx = 3; gbc.gridy = 0;
+            panel.add(unitPriceLabel, gbc);
+            
+            // Quantity
+            JLabel quantityLabel = new JLabel("Qty:");
+            quantityLabel.setFont(new Font("Arial", Font.BOLD, 12));
+            gbc.gridx = 4; gbc.gridy = 0;
+            panel.add(quantityLabel, gbc);
+            
+            quantitySpinner = new JSpinner(new SpinnerNumberModel(1, 1, 99, 1));
+            quantitySpinner.setFont(new Font("Arial", Font.PLAIN, 12));
+            quantitySpinner.setPreferredSize(new Dimension(60, 30));
+            ((JSpinner.DefaultEditor) quantitySpinner.getEditor()).getTextField().setHorizontalAlignment(JTextField.CENTER);
+            
+            quantitySpinner.addChangeListener(e -> updateTotalPrice());
+            
+            gbc.gridx = 5; gbc.gridy = 0;
+            panel.add(quantitySpinner, gbc);
+            
+            // Remove button
+            removeButton = new JButton("×");
+            removeButton.setFont(new Font("Arial", Font.BOLD, 16));
+            removeButton.setBackground(new Color(220, 53, 69));
+            removeButton.setForeground(Color.WHITE);
+            removeButton.setPreferredSize(new Dimension(30, 30));
+            removeButton.setFocusPainted(false);
+            removeButton.setBorder(BorderFactory.createEmptyBorder());
+            removeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            removeButton.setToolTipText("Remove this drink");
+            
+            removeButton.addActionListener(e -> removeDrinkSelection(this));
+            
+            gbc.gridx = 6; gbc.gridy = 0;
+            panel.add(removeButton, gbc);
+            
+            // Initialize the unit price
+            updateUnitPriceForSelection(this);
+        }
+        
+        public String getSelectedDrink() {
+            return (String) drinkComboBox.getSelectedItem();
+        }
+        
+        public int getQuantity() {
+            return (Integer) quantitySpinner.getValue();
+        }
+        
+        public double getUnitPrice() {
+            String selectedDrink = getSelectedDrink();
+            return drinkPrices.getOrDefault(selectedDrink, 0.0);
+        }
+        
+        public double getTotalPrice() {
+            return getUnitPrice() * getQuantity();
+        }
+    }
     private void setupGUI() {
         setTitle("Customer Order Form");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         setResizable(false);
+        
+        // Initialize drink selections list
+        drinkSelections = new ArrayList<>();
         
         JPanel mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
@@ -91,72 +225,86 @@ public class Main_ui extends JFrame {
         gbc.gridx = 1; gbc.gridy = 2;
         mainPanel.add(phoneField, gbc);
         
-        // Drink Selection
-        JLabel drinkLabel = new JLabel("Select Drink:");
-        drinkLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        gbc.gridx = 0; gbc.gridy = 3;
-        mainPanel.add(drinkLabel, gbc);
+        // Drinks Section Header
+        JLabel drinksHeaderLabel = new JLabel("Select Drinks:");
+        drinksHeaderLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(20, 5, 10, 5);
+        mainPanel.add(drinksHeaderLabel, gbc);
         
-        String[] drinks = drinkPrices.keySet().toArray(new String[0]);
-        drinkComboBox = new JComboBox<>(drinks);
-        drinkComboBox.setFont(new Font("Arial", Font.PLAIN, 14));
-        drinkComboBox.setPreferredSize(new Dimension(200, 35));
-        drinkComboBox.setBackground(Color.WHITE);
-        drinkComboBox.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        // Drink selection panel with scroll
+        drinkSelectionPanel = new JPanel();
+        drinkSelectionPanel.setLayout(new BoxLayout(drinkSelectionPanel, BoxLayout.Y_AXIS));
+        drinkSelectionPanel.setBackground(Color.WHITE);
         
-        // Add action listener for drink selection
-        drinkComboBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                updateUnitPrice();
+        drinkScrollPane = new JScrollPane(drinkSelectionPanel);
+        drinkScrollPane.setPreferredSize(new Dimension(600, 200));
+        drinkScrollPane.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        drinkScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        drinkScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.insets = new Insets(5, 5, 10, 5);
+        mainPanel.add(drinkScrollPane, gbc);
+        
+        // Add drink button
+        JButton addDrinkButton = new JButton("+ Add Drink");
+        addDrinkButton.setFont(new Font("Arial", Font.BOLD, 14));
+        addDrinkButton.setBackground(new Color(40, 167, 69));
+        addDrinkButton.setForeground(Color.WHITE);
+        addDrinkButton.setPreferredSize(new Dimension(150, 35));
+        addDrinkButton.setFocusPainted(false);
+        addDrinkButton.setBorder(BorderFactory.createEmptyBorder());
+        addDrinkButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        addDrinkButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                addDrinkButton.setBackground(new Color(35, 145, 60));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                addDrinkButton.setBackground(new Color(40, 167, 69));
             }
         });
         
-        gbc.gridx = 1; gbc.gridy = 3;
-        mainPanel.add(drinkComboBox, gbc);
+        addDrinkButton.addActionListener(e -> addDrinkSelection());
         
-        // Unit Price Display
-        JLabel priceLabel = new JLabel("Unit Price:");
-        priceLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        gbc.gridx = 0; gbc.gridy = 4;
-        mainPanel.add(priceLabel, gbc);
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(5, 5, 10, 5);
+        mainPanel.add(addDrinkButton, gbc);
         
-        unitPriceLabel = new JLabel("$0.00");
-        unitPriceLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        unitPriceLabel.setForeground(new Color(34, 139, 34));
-        unitPriceLabel.setBorder(BorderFactory.createCompoundBorder(
+        // Total Price
+        JLabel totalLabel = new JLabel("Total Price:");
+        totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.insets = new Insets(20, 5, 10, 5);
+        mainPanel.add(totalLabel, gbc);
+        
+        totalPriceLabel = new JLabel("$0.00");
+        totalPriceLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        totalPriceLabel.setForeground(new Color(34, 139, 34));
+        totalPriceLabel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
         ));
-        unitPriceLabel.setOpaque(true);
-        unitPriceLabel.setBackground(new Color(248, 248, 248));
-        gbc.gridx = 1; gbc.gridy = 4;
-        mainPanel.add(unitPriceLabel, gbc);
+        totalPriceLabel.setOpaque(true);
+        totalPriceLabel.setBackground(new Color(248, 248, 248));
+        gbc.gridx = 1; gbc.gridy = 6;
+        mainPanel.add(totalPriceLabel, gbc);
         
-        // Quantity
-        JLabel quantityLabel = new JLabel("Quantity:");
-        quantityLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        gbc.gridx = 0; gbc.gridy = 5;
-        mainPanel.add(quantityLabel, gbc);
-        
-        quantitySpinner = new JSpinner(new SpinnerNumberModel(1, 1, 99, 1));
-        quantitySpinner.setFont(new Font("Arial", Font.PLAIN, 14));
-        quantitySpinner.setPreferredSize(new Dimension(80, 35));
-        ((JSpinner.DefaultEditor) quantitySpinner.getEditor()).getTextField().setHorizontalAlignment(JTextField.CENTER);
-        gbc.gridx = 1; gbc.gridy = 5;
-        mainPanel.add(quantitySpinner, gbc);
-        
-        // Submit Button
+        // Submit button
         submitButton = new JButton("Submit Order");
         submitButton.setFont(new Font("Arial", Font.BOLD, 16));
         submitButton.setBackground(new Color(70, 130, 180));
-        submitButton.setForeground(Color.blue);
+        submitButton.setForeground(Color.WHITE);
         submitButton.setPreferredSize(new Dimension(200, 45));
         submitButton.setFocusPainted(false);
         submitButton.setBorder(BorderFactory.createEmptyBorder());
         submitButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // Add hover effect
         submitButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 submitButton.setBackground(new Color(60, 110, 160));
@@ -166,111 +314,149 @@ public class Main_ui extends JFrame {
             }
         });
         
-        // Add action listener for submit button
-        submitButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                submitOrder();
-            }
-        });
+        submitButton.addActionListener(e -> submitOrder());
         
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(30, 5, 10, 5);
         mainPanel.add(submitButton, gbc);
         
         add(mainPanel, BorderLayout.CENTER);
         
-        // Set window properties
+        // Add the first drink selection by default
+        addDrinkSelection();
+        
         pack();
         setLocationRelativeTo(null);
         
-        // Set initial focus
         nameField.requestFocusInWindow();
     }
-    
-    private void updateUnitPrice() {
-        String selectedDrink = (String) drinkComboBox.getSelectedItem();
-        double price = drinkPrices.get(selectedDrink);
-        unitPriceLabel.setText(String.format("$%.2f", price));
-    }
-    
-    private void submitOrder() {
-        // Validate input
-        String name = nameField.getText().trim();
-        String phone = phoneField.getText().trim();
-        String drink = (String) drinkComboBox.getSelectedItem();
-        int quantity = (Integer) quantitySpinner.getValue();
+
+    private void addDrinkSelection() {
+        DrinkSelection selection = new DrinkSelection();
+        drinkSelections.add(selection);
         
-        if (name.isEmpty()) {
-            showError("Please enter customer name.");
+        drinkSelectionPanel.add(selection.panel);
+        drinkSelectionPanel.add(Box.createVerticalStrut(10)); // Add spacing
+        
+        // Enable remove button only if there's more than one drink
+        updateRemoveButtonStates();
+        
+        // Refresh the display
+        drinkSelectionPanel.revalidate();
+        drinkSelectionPanel.repaint();
+        
+        // Update total price
+        updateTotalPrice();
+        
+        // Scroll to show the new drink selection
+        SwingUtilities.invokeLater(() -> {
+            JScrollBar vertical = drinkScrollPane.getVerticalScrollBar();
+            vertical.setValue(vertical.getMaximum());
+        });
+    }
+
+    private void removeDrinkSelection(DrinkSelection selection) {
+        if (drinkSelections.size() > 1) {
+            drinkSelections.remove(selection);
+            drinkSelectionPanel.remove(selection.panel);
+            
+            // Remove the spacing component if it exists
+            Component[] components = drinkSelectionPanel.getComponents();
+            for (int i = 0; i < components.length; i++) {
+                if (components[i] instanceof Box.Filler) {
+                    drinkSelectionPanel.remove(components[i]);
+                    break;
+                }
+            }
+            
+            updateRemoveButtonStates();
+            
+            drinkSelectionPanel.revalidate();
+            drinkSelectionPanel.repaint();
+            
+            updateTotalPrice();
+        }
+    }
+
+    private void updateRemoveButtonStates() {
+        boolean enableRemove = drinkSelections.size() > 1;
+        for (DrinkSelection selection : drinkSelections) {
+            selection.removeButton.setEnabled(enableRemove);
+            selection.removeButton.setVisible(enableRemove);
+        }
+    }
+
+    private void updateUnitPriceForSelection(DrinkSelection selection) {
+        String selectedDrink = selection.getSelectedDrink();
+        double price = drinkPrices.getOrDefault(selectedDrink, 0.0);
+        selection.unitPriceLabel.setText(String.format("$%.2f", price));
+    }
+
+    private void updateTotalPrice() {
+        double total = 0.0;
+        for (DrinkSelection selection : drinkSelections) {
+            total += selection.getTotalPrice();
+        }
+        totalPriceLabel.setText(String.format("$%.2f", total));
+    }
+
+    // Updated submit order method to handle multiple drinks
+    private void submitOrder() {
+        String customerName = nameField.getText().trim();
+        String phoneNumber = phoneField.getText().trim();
+        
+        if (customerName.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter customer name.", "Missing Information", JOptionPane.WARNING_MESSAGE);
             nameField.requestFocus();
             return;
         }
         
-        if (phone.isEmpty()) {
-            showError("Please enter phone number.");
+        if (phoneNumber.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter phone number.", "Missing Information", JOptionPane.WARNING_MESSAGE);
             phoneField.requestFocus();
             return;
         }
         
-        if (drink.equals("Select a drink...") || drink == null) {
-            showError("Please select a drink.");
-            drinkComboBox.requestFocus();
+        if (drinkSelections.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please add at least one drink.", "Missing Information", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        // Calculate total
-        double unitPrice = drinkPrices.get(drink);
-        double totalPrice = unitPrice * quantity;
+        // Build order summary
+        StringBuilder orderSummary = new StringBuilder();
+        orderSummary.append("Order Summary:\n\n");
+        orderSummary.append("Customer: ").append(customerName).append("\n");
+        orderSummary.append("Phone: ").append(phoneNumber).append("\n\n");
+        orderSummary.append("Items:\n");
         
-        // Show order confirmation
-        String orderSummary = String.format(
-            "Order Confirmation\n\n" +
-            "Customer: %s\n" +
-            "Phone: %s\n" +
-            "Drink: %s\n" +
-            "Unit Price: $%.2f\n" +
-            "Quantity: %d\n" +
-            "Total Price: $%.2f\n\n" +
-            "Order submitted successfully!",
-            name, phone, drink, unitPrice, quantity, totalPrice
-        );
-        
-        JOptionPane.showMessageDialog(this, orderSummary, "Order Confirmation", 
-                                    JOptionPane.INFORMATION_MESSAGE);
-        
-        // Reset form
-        resetForm();
-    }
-    
-    private void showError(String message) {
-        JOptionPane.showMessageDialog(this, message, "Input Error", 
-                                    JOptionPane.ERROR_MESSAGE);
-    }
-    
-    private void resetForm() {
-        nameField.setText("");
-        phoneField.setText("");
-        drinkComboBox.setSelectedIndex(0);
-        quantitySpinner.setValue(1);
-        unitPriceLabel.setText("$0.00");
-        nameField.requestFocusInWindow();
-    }
-    
-    public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(
-            UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
+        double grandTotal = 0.0;
+        for (int i = 0; i < drinkSelections.size(); i++) {
+            DrinkSelection selection = drinkSelections.get(i);
+            double itemTotal = selection.getTotalPrice();
+            grandTotal += itemTotal;
+            
+            orderSummary.append(String.format("%d. %s x%d = $%.2f\n", 
+                i + 1, selection.getSelectedDrink(), selection.getQuantity(), itemTotal));
         }
         
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new Main_ui().setVisible(true);
-            }
-        });
+        orderSummary.append(String.format("\nTotal: $%.2f", grandTotal));
+        
+        int result = JOptionPane.showConfirmDialog(this, orderSummary.toString(), 
+            "Confirm Order", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+        
+        if (result == JOptionPane.YES_OPTION) {
+            // Clear the form for next order
+            nameField.setText("");
+            phoneField.setText("");
+            
+            // Reset to one drink selection
+            drinkSelections.clear();
+            drinkSelectionPanel.removeAll();
+            addDrinkSelection();
+            
+            JOptionPane.showMessageDialog(this, "Order submitted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            nameField.requestFocus();
+        }
     }
 }

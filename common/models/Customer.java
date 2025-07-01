@@ -14,7 +14,6 @@ public class Customer implements Serializable {
         this.id = id;
         this.name = name;
         this.phone = phone;
-        this.email = email;
     }
     
     // Getters and setters

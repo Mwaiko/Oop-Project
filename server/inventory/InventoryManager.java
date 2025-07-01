@@ -12,8 +12,7 @@ import java.util.stream.Collectors;
 public class InventoryManager {
     private DatabaseManager dbManager;
     
-    public InventoryManager(DatabaseManager dbManager) {
-        this.dbManager = dbManager;
+    public InventoryManager() {
     }
     
     public void initializeSampleDrinks() throws SQLException {
@@ -81,8 +80,10 @@ public class InventoryManager {
         }
     }
     
-    public List<Drink> getAllDrinks() throws SQLException {
-        return dbManager.getAllDrinks();
+    public List<Drink> getAllDrinks() throws SQLException{
+            return dbManager.getAllDrinks();
+        
+        
     }
     
     public Drink getDrink(int id) throws SQLException {

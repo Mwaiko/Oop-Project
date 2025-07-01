@@ -31,8 +31,8 @@ public class HeadquartersServer {
     
     public HeadquartersServer() {
         dbManager = new DatabaseManager();
-        inventoryManager = new InventoryManager(dbManager);
-        orderService = new OrderService(dbManager, inventoryManager);
+        inventoryManager = new InventoryManager();
+        orderService = new OrderService();
         reportGenerator = new ReportGenerator(dbManager);
         connectedBranches = new ConcurrentHashMap<>();
         executorService = Executors.newFixedThreadPool(MAX_THREADS);
