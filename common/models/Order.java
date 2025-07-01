@@ -19,16 +19,15 @@ public class Order implements Serializable {
     public static final String STATUS_COMPLETED = "COMPLETED";
     public static final String STATUS_CANCELLED = "CANCELLED";
     
-    public Order(int id, Customer customer, Branch branch) {
-        this.id = id;
+    public Order(Customer customer, Branch branch) {
+
         this.customer = customer;
         this.branch = branch;
         this.items = new ArrayList<>();
         this.orderDate = LocalDateTime.now();
         this.OrderStatus = STATUS_PENDING;
     }
-    
-    // Getters and setters
+
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
     

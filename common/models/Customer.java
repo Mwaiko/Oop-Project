@@ -10,8 +10,7 @@ public class Customer implements Serializable {
     private String phone;
     private String email;
     
-    public Customer(int id, String name, String phone, String email) {
-        this.id = id;
+    public Customer(String name, String phone) {
         this.name = name;
         this.phone = phone;
     }

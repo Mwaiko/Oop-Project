@@ -8,13 +8,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
-import server.inventory.InventoryManager;
+
+import common.models.Customer;
 import common.models.Order;
+import server.inventory.InventoryManager;
 import common.models.Branch;
 import common.models.Drink;
-import server.services.OrderProcessor;
+import client.services.ClientService;
 public class Main_ui extends JFrame {
-   
+    private ClientService clientService;
     private JTextField nameField;
     private JTextField phoneField;
     private JComboBox<String> drinkComboBox;
@@ -28,6 +30,7 @@ public class Main_ui extends JFrame {
     public Main_ui(Branch branch,String HqipAddress) {
         this.branch = branch;
         this.HqIpaddress = HqipAddress;
+        this.clientService = new ClientService(branch.getName());
         initializeDrinkPrices();
         setupGUI();
         
@@ -35,23 +38,22 @@ public class Main_ui extends JFrame {
     public Main_ui(Branch branch) {
         this.branch = branch;
         this.HqIpaddress = "localhost";
+        this.clientService = new ClientService(branch.getName());
         initializeDrinkPrices();
         setupGUI();
 
     }
     
     private void initializeDrinkPrices()  {
-        try {
-            List<Drink> inventory = new InventoryManager().getAllDrinks();
-            drinkPrices = new HashMap<>();
-            drinkPrices.put("Select Drink", 0.0);
-            for (int i = 0; i < inventory.size(); i++) {
+
+        List<Drink> inventory = clientService.getCurrentInventory();
+        drinkPrices = new HashMap<>();
+        drinkPrices.put("Select Drink", 0.0);
+        for (int i = 0; i < inventory.size(); i++) {
                 Drink drink = inventory.get(i);
                 drinkPrices.put(drink.getName(),drink.getPrice().doubleValue());
-            }
-        }catch(SQLException e){
-            e.printStackTrace();
         }
+
         
         
         
@@ -433,8 +435,7 @@ public class Main_ui extends JFrame {
             JOptionPane.showMessageDialog(this, "Please add at least one drink.", "Missing Information", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
-        // Build order summary
+
         StringBuilder orderSummary = new StringBuilder();
         orderSummary.append("Order Summary:\n\n");
         orderSummary.append("Customer: ").append(customerName).append("\n");
@@ -460,7 +461,9 @@ public class Main_ui extends JFrame {
             // Clear the form for next order
             nameField.setText("");
             phoneField.setText("");
-            
+            Customer currentcustomer = new Customer(customerName,phoneNumber);
+            Order currentorder = new Order(currentcustomer,branch);
+            clientService.submitOrder(currentorder);
             // Reset to one drink selection
             drinkSelections.clear();
             drinkSelectionPanel.removeAll();
