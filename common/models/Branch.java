@@ -27,7 +27,12 @@ public class Branch implements Serializable {
     // Getters and setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
-    
+    public String getBranchType(){
+        return location;
+    }
+    public String getHost(){
+        return ipAddress;
+    }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     
