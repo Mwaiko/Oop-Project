@@ -13,6 +13,7 @@ public class InventoryManager {
     private DatabaseManager dbManager;
     
     public InventoryManager() {
+        dbManager = new DatabaseManager();
     }
     
     public void initializeSampleDrinks() throws SQLException {

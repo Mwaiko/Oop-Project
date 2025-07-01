@@ -10,11 +10,11 @@ import java.util.List;
 import java.util.Map;
 
 public class DatabaseManager {
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/beveragedb";
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/drinks_db";
     private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "password";
+    private static final String DB_PASSWORD = "101121";
     
-    // Connection pool could be implemented here for production use
+
     
     public DatabaseManager() {
         // Initialize database connection

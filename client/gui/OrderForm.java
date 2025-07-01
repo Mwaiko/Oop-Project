@@ -30,7 +30,6 @@ public class OrderForm extends JFrame{
         JPanel summaryPanel = createSummaryPanel();
         add(summaryPanel, BorderLayout.SOUTH);
 
-        // Add some sample orders for demonstration
         addSampleOrders();
 
         pack();
@@ -43,8 +42,6 @@ public class OrderForm extends JFrame{
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Orders Display"));
-
-        // Create table model
         String[] columnNames = {"Order ID", "Phone Number", "Customer Name", "Quantity", "Unit Price", "Total Amount"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -61,7 +58,6 @@ public class OrderForm extends JFrame{
         orderTable.getColumnModel().getColumn(3).setPreferredWidth(80);
         orderTable.getColumnModel().getColumn(4).setPreferredWidth(100);
         orderTable.getColumnModel().getColumn(5).setPreferredWidth(120);
-        orderTable.getColumnModel().getColumn(6).setPreferredWidth(40);
 
         JScrollPane scrollPane = new JScrollPane(orderTable);
         scrollPane.setPreferredSize(new Dimension(800, 400));

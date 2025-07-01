@@ -16,7 +16,7 @@ public class Initialize extends JFrame {
     private JButton confirmButton;
     private ButtonGroup branchButtonGroup;
     private HeadquartersServer headquartersServer;
-    
+    String hqIP;
     public Initialize() {
         initializeBranches();
         setupGUI();
@@ -212,7 +212,7 @@ public class Initialize extends JFrame {
             
             // Close this window and open Main_ui
             this.dispose();
-            new Main_ui(selectedBranch);
+            new Main_ui(selectedBranch).setVisible(true);
             
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, 
@@ -235,7 +235,7 @@ public class Initialize extends JFrame {
             "Enter Headquarters Server Details", JOptionPane.OK_CANCEL_OPTION);
         
         if (result == JOptionPane.OK_OPTION) {
-            String hqIP = ipField.getText().trim();
+            hqIP = ipField.getText().trim();
             String portText = portField.getText().trim();
             
             if (hqIP.isEmpty() || portText.isEmpty()) {
@@ -254,7 +254,7 @@ public class Initialize extends JFrame {
                 
                 // Close this window and open Main_ui
                 this.dispose();
-                new Main_ui(selectedBranch);
+                new Main_ui(selectedBranch,hqIP).setVisible(true);
                 
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "Please enter a valid port number.", 

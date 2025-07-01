@@ -24,12 +24,20 @@ public class Main_ui extends JFrame {
     ArrayList<Map<String, String>> inventory;
     public Branch branch;
     private Map<String, Double> drinkPrices;
-    
-    public Main_ui(Branch branch) {
+    private String HqIpaddress;
+    public Main_ui(Branch branch,String HqipAddress) {
         this.branch = branch;
+        this.HqIpaddress = HqipAddress;
         initializeDrinkPrices();
         setupGUI();
         
+    }
+    public Main_ui(Branch branch) {
+        this.branch = branch;
+        this.HqIpaddress = "localhost";
+        initializeDrinkPrices();
+        setupGUI();
+
     }
     
     private void initializeDrinkPrices()  {
@@ -330,6 +338,9 @@ public class Main_ui extends JFrame {
         setLocationRelativeTo(null);
         
         nameField.requestFocusInWindow();
+    }
+    public void showui(){
+
     }
 
     private void addDrinkSelection() {
