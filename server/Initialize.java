@@ -4,19 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 import common.models.Branch;
 import javax.swing.*;
+
+import client.gui.Main_ui;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 public class Initialize extends JFrame {
     private List<Branch> branches;
     private Branch selectedBranch;
     private JPanel branchPanel;
     private JButton confirmButton;
     private ButtonGroup branchButtonGroup;
-    
+    private HeadquartersServer headquartersServer;
+    private boolean isServerStarted = false;
     // HQ IP Address components
     private JPanel hqConnectionPanel;
     private JTextField hqIpField;
@@ -391,7 +396,40 @@ public class Initialize extends JFrame {
         confirmButton.setEnabled(true);
         confirmButton.setBackground(new Color(70, 130, 180));
     }
-    
+    private void routeToBranchInterface(Branch branch, String hqIp, int hqPort) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                switch (branch.getBranchType()) {
+                    case Branch.HEADQUARTERS:
+                        openHeadquartersInterface(branch);
+                        break;
+                        
+                    case Branch.BRANCH_NAKURU:
+                        new Main_ui(selectedBranch);
+                        break;
+                        
+                    case Branch.BRANCH_MOMBASA:
+                        new Main_ui(selectedBranch);
+                        break;
+                        
+                    case Branch.BRANCH_KISUMU:
+                        new Main_ui(selectedBranch);
+                        break;
+                        
+                    default:
+                        JOptionPane.showMessageDialog(null, 
+                            "Unknown branch type: " + branch.getName(),
+                            "Error", 
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, 
+                    "Error opening interface: " + e.getMessage(),
+                    "Interface Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }
     private void proceedWithSelectedBranch() {
         if (selectedBranch == null) {
             JOptionPane.showMessageDialog(this, 
@@ -481,17 +519,60 @@ public class Initialize extends JFrame {
     }
     
     private void openHeadquartersInterface(Branch branch) {
-        // Open headquarters-specific interface
-        JOptionPane.showMessageDialog(null, 
-            "Opening Headquarters Dashboard for: " + branch.getName(),
-            "Headquarters Interface", 
-            JOptionPane.INFORMATION_MESSAGE);
-        
-        // TODO: Replace with actual headquarters interface
-        // new HeadquartersMainFrame(branch).setVisible(true);
+        try {
+            // Start headquarters server if not already running
+            if (!isServerStarted) {
+                headquartersServer = new HeadquartersServer();
+                headquartersServer.startAsThread();
+                isServerStarted = true;
+                
+                // Show server status
+                JOptionPane.showMessageDialog(null, 
+                    "Headquarters Server started successfully!\n" +
+                    "Server is running on port 5000\n" +
+                    "Opening Headquarters Dashboard...",
+                    "Server Started", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(null, 
+                    "Headquarters Server is already running\n" +
+                    "Opening Headquarters Dashboard...",
+                    "Server Running", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+            
+            // Open the headquarters dashboard/interface
+            new Main_ui(selectedBranch);
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, 
+                "Failed to start Headquarters Server: " + e.getMessage(),
+                "Server Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
-    
-    
+
+    private void setupWindowCloseHandler() {
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (headquartersServer != null && isServerStarted) {
+                    int choice = JOptionPane.showConfirmDialog(
+                        Initialize.this,
+                        "Headquarters Server is running. Stop server before closing?",
+                        "Stop Server?",
+                        JOptionPane.YES_NO_OPTION
+                    );
+                    
+                    if (choice == JOptionPane.YES_OPTION) {
+                        headquartersServer.shutdown();
+                    }
+                }
+                dispose();
+                System.exit(0);
+            }
+        });
+    }
     // Getter for selected branch
     public Branch getSelectedBranch() {
         return selectedBranch;
@@ -530,7 +611,6 @@ public class Initialize extends JFrame {
             });
         });
         
-        // Wait for selection
         synchronized (lock) {
             try {
                 lock.wait();
@@ -542,7 +622,6 @@ public class Initialize extends JFrame {
         return selectedBranch[0];
     }
     
-    // Main method for testing
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {

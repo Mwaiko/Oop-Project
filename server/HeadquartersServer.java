@@ -22,7 +22,8 @@ public class HeadquartersServer {
     private InventoryManager inventoryManager;
     private OrderService orderService;
     private ReportGenerator reportGenerator;
-    
+    private volatile boolean serverRunning = false;
+    private Thread serverThread;
     private ServerSocket serverSocket;
     private ExecutorService executorService;
     private boolean running;
@@ -58,6 +59,44 @@ public class HeadquartersServer {
             stop();
         }
     }
+    public void startAsThread() {
+        if (serverRunning) {
+            System.out.println("Server is already running");
+            return;
+        }
+        
+        serverThread = new Thread(() -> {
+            start();
+        }, "HeadquartersServerThread");
+        
+        serverThread.setDaemon(true); // Dies when main program exits
+        serverThread.start();
+        serverRunning = true;
+        
+        System.out.println("Headquarters Server started as background thread");
+    }
+
+    // Graceful shutdown method
+    public void shutdown() {
+        running = false;
+        serverRunning = false;
+        
+        if (serverThread != null && serverThread.isAlive()) {
+            try {
+                serverSocket.close();
+                serverThread.interrupt();
+                serverThread.join(5000); // Wait up to 5 seconds
+            } catch (IOException | InterruptedException e) {
+                System.err.println("Error during server shutdown: " + e.getMessage());
+            }
+        }
+        
+        System.out.println("Headquarters Server shutdown complete");
+    }
+
+    public boolean isServerRunning() {
+        return serverRunning && serverThread != null && serverThread.isAlive();
+}
     
     public void stop() {
         running = false;
