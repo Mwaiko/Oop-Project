@@ -53,10 +53,6 @@ public class Main_ui extends JFrame {
                 Drink drink = inventory.get(i);
                 drinkPrices.put(drink.getName(),drink.getPrice().doubleValue());
         }
-
-        
-        
-        
     }
     private JPanel drinkSelectionPanel;
     private JScrollPane drinkScrollPane;
@@ -141,8 +137,8 @@ public class Main_ui extends JFrame {
             // Remove button
             removeButton = new JButton("×");
             removeButton.setFont(new Font("Arial", Font.BOLD, 16));
-            removeButton.setBackground(new Color(220, 53, 69));
-            removeButton.setForeground(Color.WHITE);
+            removeButton.setBackground(new Color(47, 250, 236));
+            removeButton.setForeground(new Color(47, 250, 236));
             removeButton.setPreferredSize(new Dimension(30, 30));
             removeButton.setFocusPainted(false);
             removeButton.setBorder(BorderFactory.createEmptyBorder());
@@ -263,7 +259,7 @@ public class Main_ui extends JFrame {
         JButton addDrinkButton = new JButton("+ Add Drink");
         addDrinkButton.setFont(new Font("Arial", Font.BOLD, 14));
         addDrinkButton.setBackground(new Color(40, 167, 69));
-        addDrinkButton.setForeground(Color.WHITE);
+        addDrinkButton.setForeground(new Color(47, 250, 236));
         addDrinkButton.setPreferredSize(new Dimension(150, 35));
         addDrinkButton.setFocusPainted(false);
         addDrinkButton.setBorder(BorderFactory.createEmptyBorder());
@@ -309,7 +305,7 @@ public class Main_ui extends JFrame {
         submitButton = new JButton("Submit Order");
         submitButton.setFont(new Font("Arial", Font.BOLD, 16));
         submitButton.setBackground(new Color(70, 130, 180));
-        submitButton.setForeground(Color.WHITE);
+        submitButton.setForeground(new Color(47, 250, 236));
         submitButton.setPreferredSize(new Dimension(200, 45));
         submitButton.setFocusPainted(false);
         submitButton.setBorder(BorderFactory.createEmptyBorder());

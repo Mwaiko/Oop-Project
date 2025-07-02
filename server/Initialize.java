@@ -57,8 +57,8 @@ public class Initialize extends JFrame {
         // Confirm button
         confirmButton = new JButton("Continue");
         confirmButton.setFont(new Font("Arial", Font.BOLD, 16));
-        confirmButton.setBackground(new Color(70, 130, 180));
-        confirmButton.setForeground(Color.WHITE);
+        confirmButton.setBackground(new Color(47, 250, 236));
+        confirmButton.setForeground(new Color(47, 250, 236));
         confirmButton.setPreferredSize(new Dimension(200, 45));
         confirmButton.setFocusPainted(false);
         confirmButton.setBorder(BorderFactory.createEmptyBorder());
