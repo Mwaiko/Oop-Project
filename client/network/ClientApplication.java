@@ -1,6 +1,6 @@
 package client.network;
 
-import client.services.ClientService;
+import client.service.ClientService;
 import common.models.*;
 import java.math.BigDecimal;
 import java.util.List;

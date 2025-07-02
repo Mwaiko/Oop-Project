@@ -1,4 +1,4 @@
-package client.services;
+package client.service;
 
 import client.network.ClientNetworkManager;
 import common.models.*;
@@ -146,7 +146,7 @@ public class ClientService implements ClientNetworkManager.MessageHandler {
         orderStatusListeners.remove(listener);
     }
 
-    // MessageHandler implementation - handles messages from server
+
     @Override
     public void onInventoryUpdate(List<Drink> drinks) {
         currentInventory.clear();
@@ -195,5 +195,16 @@ public class ClientService implements ClientNetworkManager.MessageHandler {
     public boolean isDrinkAvailable(int drinkId, int quantity) {
         Drink drink = findDrinkById(drinkId);
         return drink != null && drink.getQuantityAvailable() >= quantity;
+    }
+    public static void main(String []args){
+        ClientService service = new ClientService("");
+        service.connectToHeadquarters("localhost",5000);
+        service.getCurrentInventory();
+        if (service.isConnected()){
+            System.out.println("The Branch Has Succesfully connected to the Headquarter");
+        }else{
+            System.out.println("The Branch Has Failed To Connnect To the HeadQuarter");
+        }
+
     }
 }

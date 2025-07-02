@@ -7,8 +7,6 @@ import java.net.*;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.sql.SQLException;
-
 public class ClientNetworkManager {
     private Socket socket;
     private ObjectOutputStream out;

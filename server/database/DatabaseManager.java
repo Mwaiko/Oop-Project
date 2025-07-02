@@ -511,10 +511,7 @@ public class DatabaseManager {
                         customer,
                         branch
                     );
-                    
-                
-                    
-                    
+
                     orders.add(order);
                 }
             }catch(SQLException e){
