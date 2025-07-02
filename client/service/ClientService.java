@@ -180,7 +180,7 @@ public class ClientService implements ClientNetworkManager.MessageHandler {
     public Order createOrder(Customer customer, Branch branch) {
         // Generate a simple order ID (in real app, this should be more sophisticated)
         int orderId = (int) (System.currentTimeMillis() % 100000);
-        return new Order(orderId, customer, branch);
+        return new Order(customer, branch);
     }
 
     // Helper method to find drink by ID

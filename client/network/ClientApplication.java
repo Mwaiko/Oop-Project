@@ -161,7 +161,7 @@ public class ClientApplication {
         System.out.print("Customer Email: ");
         String customerEmail = scanner.nextLine();
 
-        Customer customer = new Customer(0, customerName, customerPhone, customerEmail);
+        Customer customer = new Customer(customerName, customerPhone);
 
         // Create branch object
         Branch branch = new Branch(0, branchName, branchName, "localhost", 0);

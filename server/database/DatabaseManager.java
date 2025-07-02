@@ -306,10 +306,8 @@ public class DatabaseManager {
             
             if (rs.next()) {
                 return new Customer(
-                    rs.getInt("customer_id"),
                     rs.getString("full_name"),
-                    rs.getString("phone"),
-                    rs.getString("email")
+                    rs.getString("phone")
                 );
             }
             return null;
@@ -326,10 +324,8 @@ public class DatabaseManager {
             
             while (rs.next()) {
                 customers.add(new Customer(
-                    rs.getInt("customer_id"),
                     rs.getString("full_name"),
-                    rs.getString("phone"),
-                    rs.getString("email")
+                    rs.getString("phone")
                 ));
             }
         }
@@ -508,11 +504,10 @@ public class DatabaseManager {
             stmt.setInt(1, branchId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Customer customer = new Customer(rs.getInt("customer_id"),rs.getString("customer_name"),rs.getString("customer_phone"), rs.getString("email"));
+                    Customer customer = new Customer(rs.getString("customer_name"),rs.getString("customer_phone"));
 
                     Branch branch = new Branch(branchId, branchName, branchName, sql, branchId);
                     Order order = new Order(
-                        rs.getInt("order_id"),
                         customer,
                         branch
                     );
