@@ -550,8 +550,47 @@ public class DatabaseManager {
     public BigDecimal getTotalSales() throws SQLException{
         return BigDecimal.ZERO;
     }
-    public void addOrder(Order order){
-
+    public void addOrder(Order order) {
+        String insertOrderSql = "INSERT INTO orders (customer_id, branch_id, order_date, total_amount, status) VALUES (?, ?, ?, ?, ?)";
+        String insertItemSql = "INSERT INTO order_items (order_id, drink_id, quantity, price) VALUES (?, ?, ?, ?)";
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            // Insert order
+            try (PreparedStatement orderStmt = conn.prepareStatement(insertOrderSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                orderStmt.setInt(1, order.getCustomer().getId());
+                orderStmt.setInt(2, order.getBranch().getId());
+                orderStmt.setObject(3, java.sql.Timestamp.valueOf(order.getOrderDate()));
+                orderStmt.setBigDecimal(4, order.getTotalAmount());
+                orderStmt.setString(5, order.getStatus());
+                orderStmt.executeUpdate();
+                ResultSet generatedKeys = orderStmt.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    int orderId = generatedKeys.getInt(1);
+                    order.setId(orderId);
+                    // Insert order items
+                    try (PreparedStatement itemStmt = conn.prepareStatement(insertItemSql)) {
+                        for (Order.OrderItem item : order.getItems()) {
+                            itemStmt.setInt(1, orderId);
+                            itemStmt.setInt(2, item.getDrink().getId());
+                            itemStmt.setInt(3, item.getQuantity());
+                            itemStmt.setBigDecimal(4, item.getDrink().getPrice());
+                            itemStmt.addBatch();
+                        }
+                        itemStmt.executeBatch();
+                    }
+                } else {
+                    throw new SQLException("Failed to insert order, no ID obtained.");
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error adding order: " + e.getMessage());
+        }
     }
     public List<Order> getAllOrders() throws SQLException {
         List<Order> orders = new ArrayList<>();
