@@ -177,6 +177,24 @@ public class ClientNetworkManager {
         return null;
     }
 
+    // Request inventory from headquarters
+    public void requestInventory() throws IOException {
+        if (!connected) {
+            throw new IOException("Not connected to server");
+        }
+
+        NetworkMessage inventoryRequest = new NetworkMessage(
+                NetworkMessage.TYPE_REPORT_REQUEST,
+                "INVENTORY_REQUEST",
+                branchName,
+                Branch.HEADQUARTERS
+        );
+
+        out.writeObject(inventoryRequest);
+        out.flush();
+        System.out.println("Inventory request sent to headquarters");
+    }
+
     public void sendRequest(Object request) throws IOException {
         if (!connected) {
             throw new IOException("Not connected to server");

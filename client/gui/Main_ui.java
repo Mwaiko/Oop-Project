@@ -25,38 +25,107 @@ public class Main_ui extends JFrame {
     private String HqIpaddress;
     public Main_ui(Branch branch, String HqipAddress) {
         this.branch = branch;
-        this.HqIpaddress = HqipAddress;
         this.clientService = new ClientService(branch.getName());
-        boolean Connection = clientService.connectToHeadquarters("localhost", 5000);
 
-        if (!Connection) {
-            JOptionPane.showMessageDialog(null,
+        // Initialize UI components (keep your existing setup)
+        setupGUI();
+
+        // Setup listeners BEFORE connecting
+        setupListeners();
+
+        // Attempt connection
+        boolean connected = clientService.connectToHeadquarters("localhost", 5000);
+        if (!connected) {
+            JOptionPane.showMessageDialog(this,
                     "Failed to connect to headquarters server",
                     "Connection Error",
                     JOptionPane.ERROR_MESSAGE);
+        } else {
+            // Wait a moment for initial inventory update to arrive
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    Thread.sleep(1000);
+                    // Try to load inventory after a delay
+                    initializeDrinkPrices();
+                    // If inventory is still empty, request it from server
+                    if (clientService.getCurrentInventory().isEmpty()) {
+                        System.out.println("Inventory still empty, requesting from server...");
+                        clientService.requestInventory();
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
         }
-
-        viewInventory();
-        initializeDrinkPrices();
-        setupGUI();
     }
 
     public Main_ui(Branch branch) {
         this.branch = branch;
-        this.HqIpaddress = "localhost";
         this.clientService = new ClientService(branch.getName());
-        boolean Connection = clientService.connectToHeadquarters("localhost", 5000);
 
-        if (!Connection) {
-            JOptionPane.showMessageDialog(null,
+        // Initialize UI components (keep your existing setup)
+        setupGUI();
+
+        // Setup listeners BEFORE connecting
+        setupListeners();
+
+        // Attempt connection
+        boolean connected = clientService.connectToHeadquarters("localhost", 5000);
+        if (!connected) {
+            JOptionPane.showMessageDialog(this,
                     "Failed to connect to headquarters server",
                     "Connection Error",
                     JOptionPane.ERROR_MESSAGE);
+        } else {
+            // Wait a moment for initial inventory update to arrive
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    Thread.sleep(1000);
+                    // Try to load inventory after a delay
+                    initializeDrinkPrices();
+                    // If inventory is still empty, request it from server
+                    if (clientService.getCurrentInventory().isEmpty()) {
+                        System.out.println("Inventory still empty, requesting from server...");
+                        clientService.requestInventory();
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
         }
+    }
+    private void setupListeners() {
+        // Listen for inventory updates from the server
+        clientService.addInventoryUpdateListener(drinks -> {
+            SwingUtilities.invokeLater(() -> {
+                System.out.println("Received inventory update with " + drinks.size() + " items");
+                
+                // Update drink prices with new inventory data
+                drinkPrices.clear();
+                drinkPrices.put("Select Drink", 0.0);
+                
+                for (Drink drink : drinks) {
+                    drinkPrices.put(drink.getName(), drink.getPrice().doubleValue());
+                }
+                
+                // Update the UI with new inventory data
+                updateDrinkComboBoxes();
+                
+                // Enable submit button if inventory is available
+                submitButton.setEnabled(!drinks.isEmpty());
+                
+                System.out.println("Inventory UI updated successfully");
+            });
+        });
 
-        initializeDrinkPrices();
-        viewInventory();
-        setupGUI();
+        clientService.addOrderStatusListener(status -> {
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(this,
+                        "Order Status: " + status,
+                        "Order Update",
+                        JOptionPane.INFORMATION_MESSAGE);
+            });
+        });
     }
     private void displayInventory(List<Drink> drinks) {
         System.out.println("\n=== CURRENT INVENTORY ===");
@@ -89,17 +158,26 @@ public class Main_ui extends JFrame {
 
         try {
             List<Drink> inventory = clientService.getCurrentInventory();
-            System.out.println(inventory);
+            if (inventory.isEmpty()) {
+                System.out.println("Inventory is empty, waiting for server update...");
+                // Don't show error if inventory is empty - it might just not have arrived yet
+                return;
+            }
+            
             for (Drink drink : inventory) {
                 drinkPrices.put(drink.getName(), drink.getPrice().doubleValue());
-
             }
+            
+            // Update the drink combo boxes with new data
+            updateDrinkComboBoxes();
+            
+            System.out.println("Inventory loaded successfully: " + inventory.size() + " items");
         } catch (Exception e) {
-
             System.err.println("Could not load inventory from server: " + e.getMessage());
-            drinkPrices.put("Coffee", 2.50);
-            drinkPrices.put("Tea", 2.00);
-            drinkPrices.put("Soda", 1.50);
+            JOptionPane.showMessageDialog(this,
+                    "Failed to load inventory. Please check connection.",
+                    "Inventory Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -484,30 +562,20 @@ public class Main_ui extends JFrame {
         }
         totalPriceLabel.setText(String.format("$%.2f", total));
     }
-
-    // Updated submit order method to handle multiple drinks
     private void submitOrder() {
+        // Validate inputs
         String customerName = nameField.getText().trim();
         String phoneNumber = phoneField.getText().trim();
 
-        if (customerName.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter customer name.", "Missing Information", JOptionPane.WARNING_MESSAGE);
-            nameField.requestFocus();
+        if (customerName.isEmpty() || phoneNumber.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Please enter customer name and phone number",
+                    "Missing Information",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        if (phoneNumber.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter phone number.", "Missing Information", JOptionPane.WARNING_MESSAGE);
-            phoneField.requestFocus();
-            return;
-        }
-
-        if (drinkSelections.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please add at least one drink.", "Missing Information", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Check if connected to HQ
+        // Check connection
         if (!clientService.isConnected()) {
             JOptionPane.showMessageDialog(this,
                     "Cannot submit order: Not connected to headquarters",
@@ -516,66 +584,96 @@ public class Main_ui extends JFrame {
             return;
         }
 
-        StringBuilder orderSummary = new StringBuilder();
-        orderSummary.append("Order Summary:\n\n");
-        orderSummary.append("Customer: ").append(customerName).append("\n");
-        orderSummary.append("Phone: ").append(phoneNumber).append("\n\n");
-        orderSummary.append("Items:\n");
+        // Create customer and order
+        Customer customer = new Customer(customerName, phoneNumber);
+        Order order = clientService.createOrder(customer, branch);
 
-        double grandTotal = 0.0;
-        for (int i = 0; i < drinkSelections.size(); i++) {
-            DrinkSelection selection = drinkSelections.get(i);
-            double itemTotal = selection.getTotalPrice();
-            grandTotal += itemTotal;
-
-            orderSummary.append(String.format("%d. %s x%d = $%.2f\n",
-                    i + 1, selection.getSelectedDrink(), selection.getQuantity(), itemTotal));
+        // Add items to order
+        for (DrinkSelection selection : drinkSelections) {
+            String drinkName = selection.getSelectedDrink();
+            if (!drinkName.equals("Select Drink")) {
+                Drink drink = findDrinkByName(drinkName);
+                if (drink != null) {
+                    int quantity = selection.getQuantity();
+                    order.addItem(drink, quantity);
+                }
+            }
         }
 
-        orderSummary.append(String.format("\nTotal: $%.2f", grandTotal));
+        // Verify we have items
+        if (order.getItems().isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Please add at least one valid item to the order",
+                    "Empty Order",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-        int result = JOptionPane.showConfirmDialog(this, orderSummary.toString(),
-                "Confirm Order", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+        // Submit order
+        boolean success = clientService.submitOrder(order);
+        if (success) {
+            // Clear form for next order
+            nameField.setText("");
+            phoneField.setText("");
+            // Reset drink selections
+            drinkSelections.clear();
+            drinkSelectionPanel.removeAll();
+            addDrinkSelection();
 
-        if (result == JOptionPane.YES_OPTION) {
-            // Create and submit order
-            Customer currentCustomer = new Customer(customerName, phoneNumber);
-            Order currentOrder = new Order(currentCustomer, branch);
-
-            // Add order items (you'll need to add items to the order based on selections)
-            for (DrinkSelection selection : drinkSelections) {
-                // This assumes you have a method to add items to order
-                // You may need to modify your Order class to support this
-            }
-
-            boolean orderSubmitted = clientService.submitOrder(currentOrder);
-
-            if (orderSubmitted) {
-                // Clear the form for next order
-                nameField.setText("");
-                phoneField.setText("");
-
-                // Reset to one drink selection
-                drinkSelections.clear();
-                drinkSelectionPanel.removeAll();
-                addDrinkSelection();
-
-                JOptionPane.showMessageDialog(this, "Order submitted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                nameField.requestFocus();
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Failed to submit order. Please try again.",
-                        "Order Error",
-                        JOptionPane.ERROR_MESSAGE);
-            }
+            JOptionPane.showMessageDialog(this,
+                    "Order submitted successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to submit order. Please try again.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
+
+    private Drink findDrinkByName(String name) {
+        List<Drink> inventory = clientService.getCurrentInventory();
+        return inventory.stream()
+                .filter(d -> d.getName().equals(name))
+                .findFirst()
+                .orElse(null);
+    }
+    
+    private void updateDrinkComboBoxes() {
+        String[] drinks = drinkPrices.keySet().toArray(new String[0]);
+        
+        // Update all existing drink combo boxes
+        for (DrinkSelection selection : drinkSelections) {
+            String currentSelection = selection.getSelectedDrink();
+            selection.drinkComboBox.setModel(new DefaultComboBoxModel<>(drinks));
+            
+            // Try to restore the previous selection if it still exists
+            if (!currentSelection.equals("Select Drink")) {
+                selection.drinkComboBox.setSelectedItem(currentSelection);
+            }
+            
+            // Update the price display
+            updateUnitPriceForSelection(selection);
+        }
+        
+        // Update total price
+        updateTotalPrice();
+    }
     @Override
     public void dispose() {
         if (clientService != null) {
             clientService.disconnect();
         }
         super.dispose();
+    }
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            // Example branch - in real app, this would come from your system
+            Branch branch = new Branch(1, "Nakuru", "Nakuru Branch", "localhost", 5000);
+            Main_ui ui = new Main_ui(branch);
+            ui.setVisible(true);
+        });
     }
 }

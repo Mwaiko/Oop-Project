@@ -118,6 +118,20 @@ public class ClientService implements ClientNetworkManager.MessageHandler {
         }
     }
 
+    // Request inventory from headquarters
+    public void requestInventory() {
+        if (networkManager == null || !networkManager.isConnected()) {
+            System.err.println("Not connected to headquarters server");
+            return;
+        }
+
+        try {
+            networkManager.requestInventory();
+        } catch (IOException e) {
+            System.err.println("Error requesting inventory: " + e.getMessage());
+        }
+    }
+
     // Get current inventory
     public List<Drink> getCurrentInventory() {
         return new ArrayList<>(currentInventory);

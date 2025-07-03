@@ -212,7 +212,7 @@ public class Initialize extends JFrame {
             
             // Close this window and open Main_ui
             this.dispose();
-            new Main_ui(selectedBranch).setVisible(true);
+            new Main_ui(selectedBranch,"localhost").setVisible(true);
             
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, 
