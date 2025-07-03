@@ -20,7 +20,6 @@ public class Order implements Serializable {
     public static final String STATUS_CANCELLED = "CANCELLED";
     
     public Order(Customer customer, Branch branch) {
-
         this.customer = customer;
         this.branch = branch;
         this.items = new ArrayList<>();

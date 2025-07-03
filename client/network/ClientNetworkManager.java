@@ -42,10 +42,7 @@ public class ClientNetworkManager {
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());
 
-        // Register this branch with the server
         registerWithServer();
-
-        // Start listener thread
         startListenerThread();
 
         connected = true;
@@ -108,7 +105,6 @@ public class ClientNetworkManager {
                 System.out.println("Unknown message type received: " + message.getType());
         }
 
-        // Also add to response queue for synchronous operations
         responseQueue.offer(message);
     }
 
@@ -116,7 +112,6 @@ public class ClientNetworkManager {
         this.messageHandler = handler;
     }
 
-    // Send order to headquarters
     public boolean sendOrder(Order order) throws IOException {
         if (!connected) {
             throw new IOException("Not connected to server");
@@ -132,9 +127,8 @@ public class ClientNetworkManager {
         out.writeObject(orderMessage);
         out.flush();
 
-        // Wait for response
         try {
-            NetworkMessage response = responseQueue.take(); // Blocking wait
+            NetworkMessage response = responseQueue.take();
             if (response.getType().equals(NetworkMessage.TYPE_ORDER)) {
                 String status = (String) response.getPayload();
                 return "SUCCESS".equals(status);
@@ -147,7 +141,6 @@ public class ClientNetworkManager {
         return false;
     }
 
-    // Request report from headquarters
     public Object requestReport(String reportType) throws IOException {
         if (!connected) {
             throw new IOException("Not connected to server");
@@ -163,9 +156,8 @@ public class ClientNetworkManager {
         out.writeObject(reportRequest);
         out.flush();
 
-        // Wait for response
         try {
-            NetworkMessage response = responseQueue.take(); // Blocking wait
+            NetworkMessage response = responseQueue.take();
             if (response.getType().equals(NetworkMessage.TYPE_REPORT_RESPONSE)) {
                 return response.getPayload();
             }
@@ -177,7 +169,6 @@ public class ClientNetworkManager {
         return null;
     }
 
-    // Request inventory from headquarters
     public void requestInventory() throws IOException {
         if (!connected) {
             throw new IOException("Not connected to server");
@@ -217,7 +208,7 @@ public class ClientNetworkManager {
         if (listenerThread != null) {
             listenerThread.interrupt();
             try {
-                listenerThread.join(3000); // Wait up to 3 seconds
+                listenerThread.join(3000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }

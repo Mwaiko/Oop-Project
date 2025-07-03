@@ -96,7 +96,7 @@ public class HeadquartersServer {
 
     public boolean isServerRunning() {
         return serverRunning && serverThread != null && serverThread.isAlive();
-}
+    }
     
     public void stop() {
         running = false;
@@ -125,7 +125,6 @@ public class HeadquartersServer {
         }catch(SQLException e){
             System.err.println(e);
         }
-       
     }
     
     // Send stock updates to all branches
