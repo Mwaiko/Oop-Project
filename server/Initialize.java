@@ -205,7 +205,8 @@ public class Initialize extends JFrame {
             // Start headquarters server
             headquartersServer = new HeadquartersServer();
             headquartersServer.startAsThread();
-            
+
+
             JOptionPane.showMessageDialog(this, 
                 "Headquarters Server started successfully on port 5000", 
                 "Server Started", JOptionPane.INFORMATION_MESSAGE);

@@ -170,7 +170,7 @@ public class HeadquartersServer {
                 
                 System.out.println("Branch connected: " + branchName);
                 
-                // Send initial inventory
+
                 sendInventoryUpdate();
                 
                 // Process messages
