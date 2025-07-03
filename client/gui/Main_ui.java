@@ -21,11 +21,12 @@ public class Main_ui extends JFrame {
     private JButton submitButton;
     ArrayList<Map<String, String>> inventory;
     public Branch branch;
-    private Map<String, Double> drinkPrices;
+    private Map<String, Integer> drinkPrices = new HashMap<>();
     private String HqIpaddress;
     public Main_ui(Branch branch, String HqipAddress) {
         this.branch = branch;
         this.clientService = new ClientService(branch.getName());
+        drinkPrices.put("Select Drink", 0);
 
         // Initialize UI components (keep your existing setup)
         setupGUI();
@@ -44,7 +45,7 @@ public class Main_ui extends JFrame {
             // Wait a moment for initial inventory update to arrive
             SwingUtilities.invokeLater(() -> {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(10);
                     // Try to load inventory after a delay
                     initializeDrinkPrices();
                     // If inventory is still empty, request it from server
@@ -63,6 +64,7 @@ public class Main_ui extends JFrame {
         this.branch = branch;
         this.clientService = new ClientService(branch.getName());
 
+        drinkPrices.put("Select Drink", 0);
         // Initialize UI components (keep your existing setup)
         setupGUI();
 
@@ -80,7 +82,7 @@ public class Main_ui extends JFrame {
             // Wait a moment for initial inventory update to arrive
             SwingUtilities.invokeLater(() -> {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(10);
                     // Try to load inventory after a delay
                     initializeDrinkPrices();
                     // If inventory is still empty, request it from server
@@ -102,10 +104,10 @@ public class Main_ui extends JFrame {
                 
                 // Update drink prices with new inventory data
                 drinkPrices.clear();
-                drinkPrices.put("Select Drink", 0.0);
+                drinkPrices.put("Select Drink", 0);
                 
                 for (Drink drink : drinks) {
-                    drinkPrices.put(drink.getName(), drink.getPrice().doubleValue());
+                    drinkPrices.put(drink.getName(), drink.getPrice().intValue());
                 }
                 
                 // Update the UI with new inventory data
@@ -143,18 +145,9 @@ public class Main_ui extends JFrame {
                     drink.getMinThreshold());
         }
     }
-    private void viewInventory() {
-        List<Drink> inventory = clientService.getCurrentInventory();
-        if (inventory.isEmpty()) {
-            System.out.println("No inventory data available.");
-            return;
-        }
-
-        displayInventory(inventory);
-    }
+    
     private void initializeDrinkPrices() {
-        drinkPrices = new HashMap<>();
-        drinkPrices.put("Select Drink", 0.0);
+        drinkPrices.put("Select Drink", 0);
 
         try {
             List<Drink> inventory = clientService.getCurrentInventory();
@@ -165,7 +158,7 @@ public class Main_ui extends JFrame {
             }
             
             for (Drink drink : inventory) {
-                drinkPrices.put(drink.getName(), drink.getPrice().doubleValue());
+                drinkPrices.put(drink.getName(), drink.getPrice().intValue());
             }
             
             // Update the drink combo boxes with new data
@@ -297,7 +290,7 @@ public class Main_ui extends JFrame {
 
         public double getUnitPrice() {
             String selectedDrink = getSelectedDrink();
-            return drinkPrices.getOrDefault(selectedDrink, 0.0);
+            return drinkPrices.getOrDefault(selectedDrink, 0);
         }
 
         public double getTotalPrice() {
@@ -551,7 +544,7 @@ public class Main_ui extends JFrame {
 
     private void updateUnitPriceForSelection(DrinkSelection selection) {
         String selectedDrink = selection.getSelectedDrink();
-        double price = drinkPrices.getOrDefault(selectedDrink, 0.0);
+        double price = drinkPrices.getOrDefault(selectedDrink, 0);
         selection.unitPriceLabel.setText(String.format("$%.2f", price));
     }
 
