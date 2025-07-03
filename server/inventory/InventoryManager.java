@@ -102,4 +102,83 @@ public class InventoryManager {
     public void deleteDrink(int id) throws SQLException {
         dbManager.deleteDrink(id);
     }
+
+    /**
+     * Update inventory for an order, first trying the branch, then falling back to headquarters if needed.
+     * @param order The order to process
+     * @return true if the order can be fulfilled, false otherwise
+     */
+    public boolean updateInventoryForOrderWithHQFallback(Order order) throws SQLException {
+        if (order.getBranch() == null) {
+            System.err.println("Order does not have a branch specified.");
+            return false;
+        }
+        int branchId = order.getBranch().getId();
+        int hqBranchId = getHeadquartersBranchId();
+        StockManager stockManager = new StockManager();
+        // First, check if branch has enough for all items
+        boolean branchHasAll = true;
+        for (Order.OrderItem item : order.getItems()) {
+            if (!stockManager.isStockAvailable(branchId, item.getDrink().getId(), item.getQuantity())) {
+                branchHasAll = false;
+                break;
+            }
+        }
+        if (branchHasAll) {
+            // Deduct from branch stock
+            for (Order.OrderItem item : order.getItems()) {
+                stockManager.reduceStock(branchId, item.getDrink().getId(), item.getQuantity());
+            }
+            return true;
+        }
+        // If not, check if HQ can fulfill the missing items
+        for (Order.OrderItem item : order.getItems()) {
+            int branchAvailable = getStockLevel(branchId, item.getDrink().getId());
+            int needed = item.getQuantity();
+            int missing = needed - branchAvailable;
+            if (missing > 0) {
+                // Check HQ
+                if (!stockManager.isStockAvailable(hqBranchId, item.getDrink().getId(), missing)) {
+                    System.err.println("Not enough stock for " + item.getDrink().getName() + " at branch or HQ.");
+                    return false;
+                }
+            }
+        }
+        // Deduct what is available from branch, rest from HQ
+        for (Order.OrderItem item : order.getItems()) {
+            int branchAvailable = getStockLevel(branchId, item.getDrink().getId());
+            int needed = item.getQuantity();
+            int missing = needed - branchAvailable;
+            if (branchAvailable > 0) {
+                stockManager.reduceStock(branchId, item.getDrink().getId(), Math.min(branchAvailable, needed));
+            }
+            if (missing > 0) {
+                stockManager.reduceStock(hqBranchId, item.getDrink().getId(), missing);
+                // Optionally, transfer the missing stock to the branch (simulate delivery)
+                // stockManager.addStock(branchId, item.getDrink().getId(), missing, 5); // 5 as default minThreshold
+            }
+        }
+        return true;
+    }
+
+    // Helper to get stock level for a drink at a branch
+    private int getStockLevel(int branchId, int drinkId) throws SQLException {
+        StockManager stockManager = new StockManager();
+        try {
+            java.util.Map<String, Object> stock = stockManager.getStockByBranch(branchId).stream()
+                .filter(s -> ((Integer)s.get("drink_id")) == drinkId)
+                .findFirst().orElse(null);
+            if (stock != null) {
+                return (Integer) stock.get("quantity");
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting stock level: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    // Helper to get HQ branch id
+    private int getHeadquartersBranchId() throws SQLException {
+        return dbManager.getBranchId(common.models.Branch.HEADQUARTERS);
+    }
 }

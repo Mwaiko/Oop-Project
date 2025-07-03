@@ -21,8 +21,8 @@ public class OrderService {
             order.setCustomer(dbManager.addCustomer(order.getCustomer()));
         }
         
-        // Update inventory
-        boolean inventoryUpdated = inventoryManager.updateInventoryForOrder(order);
+        // Update inventory with HQ fallback
+        boolean inventoryUpdated = inventoryManager.updateInventoryForOrderWithHQFallback(order);
         if (!inventoryUpdated) {
             return false;
         }
