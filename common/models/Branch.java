@@ -3,10 +3,10 @@ import java.io.Serializable;
 public class Branch implements Serializable {
     private static final long serialVersionUID = 1L;
     
-    public static final String HEADQUARTERS = "Nairobi";
-    public static final String BRANCH_NAKURU = "Nakuru";
-    public static final String BRANCH_MOMBASA = "Mombasa";
-    public static final String BRANCH_KISUMU = "Kisumu";
+    public static final String HEADQUARTERS = "Headquarters";
+    public static final String BRANCH_NAKURU = "Kisumu Branch";
+    public static final String BRANCH_MOMBASA = "Mombasa Branch";
+    public static final String BRANCH_KISUMU = "Nakuru Branch";
     
     private int id;
     public String name;

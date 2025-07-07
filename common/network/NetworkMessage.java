@@ -11,7 +11,7 @@ public class NetworkMessage implements Serializable {
     public static final String TYPE_INVENTORY_UPDATE = "INVENTORY_UPDATE";
     public static final String TYPE_REPORT_REQUEST = "REPORT_REQUEST";
     public static final String TYPE_REPORT_RESPONSE = "REPORT_RESPONSE";
-
+    public static final String TYPE_INVENTORY_REQUEST = "INVENTORY_REQUEST";
     private String type;
     private Object payload;
     private String sourceBranch;

@@ -30,43 +30,20 @@ public class DatabaseManager {
     }
     
     // Stock operations (used by StockManager)
-    public List<Map<String, Object>> getStockByBranch(int branchId) throws SQLException {
-        List<Map<String, Object>> stockList = new ArrayList<>();
-        String sql = """
-            SELECT s.stock_id, s.branch_id, s.drink_id, s.quantity, s.min_threshold,
-                   b.name as branch_name, dn.name as drink_name, ds.size, d.brand, d.price
-            FROM stock s
-            JOIN branches b ON s.branch_id = b.branch_id
-            JOIN drinks d ON s.drink_id = d.drink_id
-            JOIN drink_names dn ON d.drink_name_id = dn.drink_name_id
-            JOIN drink_sizes ds ON d.size_id = ds.size_id
-            WHERE s.branch_id = ?
-            ORDER BY dn.name
-        """;
-        
+    public int getStockByBranch(int branchId) throws SQLException {
+        String sql = "SELECT SUM(quantity) AS total_quantity FROM stock WHERE branch_id = ?";
+
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, branchId);
             ResultSet rs = stmt.executeQuery();
-            
-            while (rs.next()) {
-                Map<String, Object> stock = new HashMap<>();
-                stock.put("stock_id", rs.getInt("stock_id"));
-                stock.put("branch_id", rs.getInt("branch_id"));
-                stock.put("drink_id", rs.getInt("drink_id"));
-                stock.put("quantity", rs.getInt("quantity"));
-                stock.put("min_threshold", rs.getInt("min_threshold"));
-                stock.put("branch_name", rs.getString("branch_name"));
-                stock.put("drink_name", rs.getString("drink_name"));
-                stock.put("size", rs.getString("size"));
-                stock.put("brand", rs.getString("brand"));
-                stock.put("price", rs.getBigDecimal("price"));
-                stockList.add(stock);
+
+            if (rs.next()) {
+                return rs.getInt("total_quantity"); // Will return 0 if no rows
             }
         }
-        return stockList;
+        return 0;
     }
-    
     public void addStock(int branchId, int drinkId, int quantity, int minThreshold) throws SQLException {
         String sql = "INSERT INTO stock (branch_id, drink_id, quantity, min_threshold) VALUES (?, ?, ?, ?)";
         try (Connection conn = getConnection();
@@ -94,16 +71,16 @@ public class DatabaseManager {
     
     // Drink operations
     public Drink addDrink(String name, String brand, int quantity, BigDecimal price, int minThreshold) throws SQLException {
-        Connection conn = null;
+        Connection conn = getConnection();
         try {
-            conn = getConnection();
-            conn.setAutoCommit(false);
-            
+
+
             // First, ensure drink_names entry exists
             int drinkNameId = getOrCreateDrinkName(conn, name);
-            
+
             // Create the drink
             String sql = "INSERT INTO drinks (drink_name_id, brand, price, quantity_available, min_threshold) VALUES (?, ?, ?, ?, ?)";
+            int drinkId;
             try (PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
                 stmt.setInt(1, drinkNameId);
                 stmt.setString(2, brand);
@@ -111,16 +88,20 @@ public class DatabaseManager {
                 stmt.setInt(4, quantity);
                 stmt.setInt(5, minThreshold);
                 stmt.executeUpdate();
-                
+
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 if (generatedKeys.next()) {
-                    int drinkId = generatedKeys.getInt(1);
-                    conn.commit();
-                    return new Drink(drinkId, name, brand, price, quantity, minThreshold);
+                    drinkId = generatedKeys.getInt(1);
                 } else {
                     throw new SQLException("Creating drink failed, no ID obtained");
                 }
             }
+
+
+
+
+            return new Drink(drinkId, name, brand, price, quantity, minThreshold);
+
         } catch (SQLException e) {
             if (conn != null) {
                 try {
@@ -141,7 +122,35 @@ public class DatabaseManager {
             }
         }
     }
-    
+
+
+    public void addDrinkToAllBranches(int drinkId, int quantity, int minThreshold) throws SQLException {
+        Connection conn = getConnection();
+        String getBranchesSQL = "SELECT branch_id FROM branches";
+        List<Integer> branchIds = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(getBranchesSQL);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                branchIds.add(rs.getInt("branch_id"));
+            }
+        }
+
+        // Add stock for each branch
+        String addStockSQL = "INSERT INTO stock (branch_id, drink_id, quantity, min_threshold) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(addStockSQL)) {
+            for (int branchId : branchIds) {
+                stmt.setInt(1, branchId);
+                stmt.setInt(2, drinkId);
+                stmt.setInt(3, quantity);
+                stmt.setInt(4, minThreshold);
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
+    }
+
+
     private int getOrCreateDrinkName(Connection conn, String name) throws SQLException {
         // Check if name exists
         String checkSql = "SELECT drink_name_id FROM drink_names WHERE name = ?";
@@ -242,7 +251,7 @@ public class DatabaseManager {
                 if (rowsAffected == 0) {
                     throw new SQLException("No drink found with ID: " + drink.getId());
                 }
-                conn.commit();
+
             }
         } catch (SQLException e) {
             if (conn != null) {
@@ -297,20 +306,19 @@ public class DatabaseManager {
         }
     }
     
-    public Customer getCustomer(int id) throws SQLException {
-        String sql = "SELECT * FROM customers WHERE customer_id = ?";
+    public int getCustomer(String Name) throws SQLException {
+        String sql = "SELECT * FROM customers WHERE full_name = ?";
+        int id = -1;
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
+            stmt.setString(1, Name);
             ResultSet rs = stmt.executeQuery();
             
             if (rs.next()) {
-                return new Customer(
-                    rs.getString("full_name"),
-                    rs.getString("phone")
-                );
+                id = rs.getInt("customer_id");
+
             }
-            return null;
+            return id;
         }
     }
     
@@ -551,6 +559,7 @@ public class DatabaseManager {
         return BigDecimal.ZERO;
     }
     public void addOrder(Order order) {
+        System.out.println("Order Received" + order.getId());
         String insertOrderSql = "INSERT INTO orders (customer_id, branch_id, order_date, total_amount, status) VALUES (?, ?, ?, ?, ?)";
         String insertItemSql = "INSERT INTO order_items (order_id, drink_id, quantity, price) VALUES (?, ?, ?, ?)";
         try (Connection conn = getConnection()) {
@@ -581,7 +590,7 @@ public class DatabaseManager {
                 } else {
                     throw new SQLException("Failed to insert order, no ID obtained.");
                 }
-                conn.commit();
+
             } catch (SQLException e) {
                 conn.rollback();
                 throw e;
@@ -603,5 +612,14 @@ public class DatabaseManager {
         }
 
         return orders;
+    }
+    public static void main(String[] args){
+        try {
+            int ist = new DatabaseManager().getStockByBranch(1);
+            System.out.println(ist);
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+
     }
 }

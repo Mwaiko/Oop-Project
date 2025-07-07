@@ -16,8 +16,9 @@ public class StockManager {
     // Get all stock for a branch
     public List<Map<String, Object>> getStockByBranch(int branchId) {
         try {
-            return dbManager.getStockByBranch(branchId);
-        } catch (SQLException e) {
+            List<Map<String, Object>> list = new ArrayList<>();
+            return list;
+        } catch (Exception e) {
             System.err.println("Error getting stock: " + e.getMessage());
             return new ArrayList<>();
         }

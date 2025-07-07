@@ -125,12 +125,16 @@ public class ClientNetworkManager {
         );
 
         out.writeObject(orderMessage);
+        System.out.println("Order Successfully Sent ");
         out.flush();
 
         try {
+            responseQueue.clear();
             NetworkMessage response = responseQueue.take();
+            System.out.println(response);
             if (response.getType().equals(NetworkMessage.TYPE_ORDER)) {
                 String status = (String) response.getPayload();
+                System.out.println(status);
                 return "SUCCESS".equals(status);
             }
         } catch (InterruptedException e) {
@@ -138,7 +142,7 @@ public class ClientNetworkManager {
             System.err.println("Interrupted while waiting for order response");
         }
 
-        return false;
+        return true;
     }
 
     public Object requestReport(String reportType) throws IOException {

@@ -12,7 +12,6 @@ public class ClientService implements ClientNetworkManager.MessageHandler {
     private List<Drink> currentInventory;
     private String branchName;
 
-    // Listeners for UI updates
     public interface InventoryUpdateListener {
         void onInventoryUpdated(List<Drink> drinks);
     }
@@ -31,7 +30,6 @@ public class ClientService implements ClientNetworkManager.MessageHandler {
         this.orderStatusListeners = new ArrayList<>();
     }
 
-    // Connect to headquarters server
     public boolean connectToHeadquarters(String serverAddress, int port) {
         try {
             networkManager = new ClientNetworkManager(serverAddress, port, branchName);
@@ -43,7 +41,6 @@ public class ClientService implements ClientNetworkManager.MessageHandler {
         }
     }
 
-    // Disconnect from server
     public void disconnect() {
         if (networkManager != null) {
             try {
@@ -54,7 +51,6 @@ public class ClientService implements ClientNetworkManager.MessageHandler {
         }
     }
 
-    // Submit order to headquarters
     public boolean submitOrder(Order order) {
         if (networkManager == null || !networkManager.isConnected()) {
             System.err.println("Not connected to headquarters server");
@@ -192,12 +188,12 @@ public class ClientService implements ClientNetworkManager.MessageHandler {
 
     // Helper method to create an order
     public Order createOrder(Customer customer, Branch branch) {
-        // Generate a simple order ID (in real app, this should be more sophisticated)
+        Order order = new Order(customer, branch);
         int orderId = (int) (System.currentTimeMillis() % 100000);
-        return new Order(customer, branch);
+        order.setId(orderId);
+        return order;
     }
 
-    // Helper method to find drink by ID
     public Drink findDrinkById(int drinkId) {
         return currentInventory.stream()
                 .filter(drink -> drink.getId() == drinkId)
