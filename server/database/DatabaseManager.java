@@ -30,20 +30,32 @@ public class DatabaseManager {
     }
     
     // Stock operations (used by StockManager)
-    public int getStockByBranch(int branchId) throws SQLException {
-        String sql = "SELECT SUM(quantity) AS total_quantity FROM stock WHERE branch_id = ?";
+    public List<Map<String, Object>> getStockByBranch(int branchId) throws SQLException {
+        String sql = "SELECT stock_id, branch_id, drink_id, quantity, min_threshold FROM stock WHERE branch_id = ?";
+
+        List<Map<String, Object>> stockList = new ArrayList<>();
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, branchId);
             ResultSet rs = stmt.executeQuery();
 
-            if (rs.next()) {
-                return rs.getInt("total_quantity"); // Will return 0 if no rows
+            while (rs.next()) {
+                Map<String, Object> stock = new HashMap<>();
+                stock.put("stock_id", rs.getInt("stock_id"));
+                stock.put("branch_id", rs.getInt("branch_id"));
+                stock.put("drink_id", rs.getInt("drink_id"));
+                stock.put("quantity", rs.getInt("quantity"));
+                stock.put("min_threshold", rs.getInt("min_threshold"));
+
+                stockList.add(stock);
             }
         }
-        return 0;
+
+        return stockList;
     }
+
     public void addStock(int branchId, int drinkId, int quantity, int minThreshold) throws SQLException {
         String sql = "INSERT INTO stock (branch_id, drink_id, quantity, min_threshold) VALUES (?, ?, ?, ?)";
         try (Connection conn = getConnection();
@@ -123,32 +135,6 @@ public class DatabaseManager {
         }
     }
 
-
-    public void addDrinkToAllBranches(int drinkId, int quantity, int minThreshold) throws SQLException {
-        Connection conn = getConnection();
-        String getBranchesSQL = "SELECT branch_id FROM branches";
-        List<Integer> branchIds = new ArrayList<>();
-
-        try (PreparedStatement stmt = conn.prepareStatement(getBranchesSQL);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                branchIds.add(rs.getInt("branch_id"));
-            }
-        }
-
-        // Add stock for each branch
-        String addStockSQL = "INSERT INTO stock (branch_id, drink_id, quantity, min_threshold) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(addStockSQL)) {
-            for (int branchId : branchIds) {
-                stmt.setInt(1, branchId);
-                stmt.setInt(2, drinkId);
-                stmt.setInt(3, quantity);
-                stmt.setInt(4, minThreshold);
-                stmt.addBatch();
-            }
-            stmt.executeBatch();
-        }
-    }
 
 
     private int getOrCreateDrinkName(Connection conn, String name) throws SQLException {
@@ -298,7 +284,9 @@ public class DatabaseManager {
             
             ResultSet generatedKeys = stmt.getGeneratedKeys();
             if (generatedKeys.next()) {
-                customer.setId(generatedKeys.getInt(1));
+                int id = generatedKeys.getInt(1);
+                System.out.println("The Customer ID " + id);
+                customer.setId(id);
                 return customer;
             } else {
                 throw new SQLException("Creating customer failed, no ID obtained");
@@ -561,7 +549,7 @@ public class DatabaseManager {
     public void addOrder(Order order) {
         System.out.println("Order Received" + order.getId());
         String insertOrderSql = "INSERT INTO orders (customer_id, branch_id, order_date, total_amount, status) VALUES (?, ?, ?, ?, ?)";
-        String insertItemSql = "INSERT INTO order_items (order_id, drink_id, quantity, price) VALUES (?, ?, ?, ?)";
+        String insertItemSql = "INSERT INTO order_items (order_id, drink_id, quantity, price_per_unit) VALUES (?, ?, ?, ?)";
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
             // Insert order
@@ -615,8 +603,8 @@ public class DatabaseManager {
     }
     public static void main(String[] args){
         try {
-            int ist = new DatabaseManager().getStockByBranch(1);
-            System.out.println(ist);
+            List<Map<String,Object>> data = new DatabaseManager().getStockByBranch(1);
+            System.out.println(data);
         }catch (SQLException e){
             e.printStackTrace();
         }

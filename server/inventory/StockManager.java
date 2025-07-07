@@ -13,10 +13,10 @@ public class StockManager {
         this.dbManager = new DatabaseManager();
     }
 
-    // Get all stock for a branch
+
     public List<Map<String, Object>> getStockByBranch(int branchId) {
         try {
-            List<Map<String, Object>> list = new ArrayList<>();
+            List<Map<String, Object>> list = dbManager.getStockByBranch(branchId);
             return list;
         } catch (Exception e) {
             System.err.println("Error getting stock: " + e.getMessage());

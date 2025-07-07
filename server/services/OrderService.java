@@ -57,6 +57,7 @@ public class OrderService {
 
             // Set order status and save to database
             order.setStatus(Order.STATUS_COMPLETED);
+            System.out.println("Updated Customer" + order.getCustomer().getId());
             dbManager.addOrder(order);
 
             System.out.println("Order saved to database: " + order.getId());
