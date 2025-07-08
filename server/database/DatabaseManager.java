@@ -309,7 +309,26 @@ public class DatabaseManager {
             return id;
         }
     }
-    
+    public Customer getCustomerById(int id) throws SQLException {
+        String sql = "SELECT * FROM customers WHERE customer_id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                String name = rs.getString("full_name");
+                String phone = rs.getString("phone");
+                return new Customer(name, phone); // Adjust constructor if it also accepts email
+            }
+        }
+
+        return null; // Return null if no customer was found
+    }
+
+
     public List<Customer> getAllCustomers() throws SQLException {
         List<Customer> customers = new ArrayList<>();
         String sql = "SELECT * FROM customers ORDER BY full_name";
@@ -441,32 +460,7 @@ public class DatabaseManager {
         return branches;
     }
     
-    public void updateBranch(Branch branch) throws SQLException {
-        String sql = "UPDATE branches SET name = ?, location = ? WHERE branch_id = ?";
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, branch.getName());
-            stmt.setString(2, branch.getLocation());
-            stmt.setInt(4, branch.getId());
-            
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected == 0) {
-                throw new SQLException("No branch found with ID: " + branch.getId());
-            }
-        }
-    }
-    
-    public void deleteBranch(int id) throws SQLException {
-        String sql = "DELETE FROM branches WHERE branch_id = ?";
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected == 0) {
-                throw new SQLException("No branch found with ID: " + id);
-            }
-        }
-    }
+
     public int getBranchId(String branchName) throws SQLException {
         String sql = "SELECT branch_id FROM branches WHERE name = ?";
         try (Connection conn = getConnection();
@@ -484,43 +478,43 @@ public class DatabaseManager {
     public List<Order> getOrdersByBranch(String branchName) throws SQLException {
         int branchId = getBranchId(branchName);
         List<Order> orders = new ArrayList<>();
-        
+
         String sql = """
-            SELECT o.order_id, o.customer_id, o.order_date, o.total_amount, o.status,
-                c.full_name as customer_name, c.phone as customer_phone
-            FROM orders o
-            JOIN customers c ON o.customer_id = c.customer_id
-            WHERE o.branch_id = ?
-            ORDER BY o.order_date DESC
+            SELECT order_id, customer_id, order_date, total_amount, status
+            FROM orders
+            WHERE branch_id = ?
+            ORDER BY order_date DESC
         """;
-        
+
         try (Connection conn = getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, branchId);
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Customer customer = new Customer(rs.getString("customer_name"),rs.getString("customer_phone"));
+                    int orderId = rs.getInt("order_id");
+                    int customerId = rs.getInt("customer_id");
+                    Date orderDate = rs.getDate("order_date");
+                    double totalAmount = rs.getDouble("total_amount");
+                    String status = rs.getString("status");
 
-                    Branch branch = new Branch(branchId, branchName, branchName, sql, branchId);
-                    Order order = new Order(
-                        customer,
-                        branch
-                    );
+
+                    Branch branch = getBranchByName(branchName);
+                    Customer customer = getCustomerById(customerId);
+                    Order order = new Order(customer,branch);
 
                     orders.add(order);
                 }
-            }catch(SQLException e){
-                System.err.println("Error Getting OrderS by Branch " + e.getMessage());
-        
             }
-        }catch(SQLException e){
-            System.err.println("Error Getting OrderS by Branch " + e.getMessage());
-            return orders;
+
+        } catch (SQLException e) {
+            System.err.println("Error getting orders by branch: " + e.getMessage());
         }
+
         return orders;
     }
-    
+
     public BigDecimal getTotalSalesByBranch(String branchName) {
         try {
             int branchId = getBranchId(branchName);
@@ -595,8 +589,8 @@ public class DatabaseManager {
 
         for (int i = 0; i < branches.size(); i++) {
             Branch branch = branches.get(i);
-            List<Order> branchOrders = getOrdersByBranch(branch.name);
-            orders.addAll(branchOrders);  // Add each branch's orders to the main list
+            List<Order> branchOrders = getOrdersByBranch(branch.getName());
+            orders.addAll(branchOrders);
         }
 
         return orders;
