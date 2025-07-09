@@ -49,7 +49,7 @@ public class Main_ui extends JFrame {
         setupGUI();
         setupListeners();
 
-        boolean connected = clientService.connectToHeadquarters("localhost", 5000);
+        boolean connected = clientService.connectToHeadquarters(HqipAddress, 5000);
         if (!connected) {
             showStyledMessage("Failed to connect to headquarters server", "Connection Error", JOptionPane.ERROR_MESSAGE);
         } else {
@@ -740,7 +740,7 @@ public class Main_ui extends JFrame {
         }
 
         SwingUtilities.invokeLater(() -> {
-            Branch branch = new Branch(1, "Nakuru", "Nakuru Branch", "localhost", 5000);
+            Branch branch = new Branch(1, "Nakuru", "Nakuru Branch", "10.55.24.231", 5000);
             Main_ui ui = new Main_ui(branch);
             ui.setVisible(true);
         });
