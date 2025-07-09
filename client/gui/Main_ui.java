@@ -388,7 +388,7 @@ public class Main_ui extends JFrame {
 
         nameField = createStyledTextField();
         nameField.setPreferredSize(new Dimension(250, 40));
-
+        nameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         customerPanel.add(nameLabel);
         customerPanel.add(Box.createHorizontalStrut(10));
         customerPanel.add(nameField);
@@ -401,7 +401,7 @@ public class Main_ui extends JFrame {
 
         phoneField = createStyledTextField();
         phoneField.setPreferredSize(new Dimension(250, 40));
-
+        phoneField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         customerPanel.add(phoneLabel);
         customerPanel.add(Box.createHorizontalStrut(10));
         customerPanel.add(phoneField);
@@ -732,7 +732,7 @@ public class Main_ui extends JFrame {
         System.setProperty("awt.useSystemAAFontSettings", "on");
         System.setProperty("swing.aatext", "true");
 
-        // Set dark theme for dialogs
+        
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
