@@ -55,6 +55,22 @@ public class DatabaseManager {
 
         return stockList;
     }
+    public int getdrinkstockbybranch(int branchid,int drinkid) throws  SQLException{
+        String sql = "SELECT quantity FROM stock WHERE branch_id = ? AND drink_id = ?";
+        Connection conn = getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, branchid);
+            stmt.setInt(2, drinkid);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("quantity");
+                } else {
+                    return -1; // No record found
+                }
+            }
+        }
+    };
 
     public void addStock(int branchId, int drinkId, int quantity, int minThreshold) throws SQLException {
         String sql = "INSERT INTO stock (branch_id, drink_id, quantity, min_threshold) VALUES (?, ?, ?, ?)";
@@ -321,11 +337,11 @@ public class DatabaseManager {
             if (rs.next()) {
                 String name = rs.getString("full_name");
                 String phone = rs.getString("phone");
-                return new Customer(name, phone); // Adjust constructor if it also accepts email
+                return new Customer(name, phone);
             }
         }
 
-        return null; // Return null if no customer was found
+        return null;
     }
 
 

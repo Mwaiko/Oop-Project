@@ -512,7 +512,7 @@ public class StockStatusPanel extends JFrame {
         // Style header
         JTableHeader header = table.getTableHeader();
         header.setBackground(lightCharcoal);
-        header.setForeground(textPrimary);
+        header.setForeground(new Color(0,0,139));
         header.setFont(new Font("Segoe UI", Font.BOLD, 14));
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 40));
 

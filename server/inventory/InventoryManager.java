@@ -130,30 +130,38 @@ public class InventoryManager {
         int hqBranchId = getHeadquartersBranchId();
 
         if (!canFulfillOrder(order, branchId, hqBranchId)) {
+            for (Order.OrderItem item : order.getItems()) {
+                int drinkId = item.getDrink().getId();
+                int requiredQuantity = item.getQuantity();
+
+                int branchStock = stockManager.getDrinkStockbybranch(branchId,drinkId);
+                System.out.println("The Required Quantity is " + requiredQuantity + "The Branch Stock is " + branchStock);
+                System.out.println(requiredQuantity);
+                System.out.println(branchStock);
+                stockManager.reduceStock(branchId, drinkId, requiredQuantity);
+                System.out.println("Fulfilled " + requiredQuantity + " units of " + item.getDrink().getName() + " from branch " + branchId);
+
+            }
             return true;
         }
 
-        // Process each item in the order
+
         for (Order.OrderItem item : order.getItems()) {
             int drinkId = item.getDrink().getId();
             int requiredQuantity = item.getQuantity();
             int branchStock = getStockLevel(branchId, drinkId);
 
             if (branchStock >= requiredQuantity) {
-                // Branch has enough stock
                 stockManager.reduceStock(branchId, drinkId, requiredQuantity);
-                System.out.println("Fulfilled " + requiredQuantity + " units of " + item.getDrink().getName() + " from branch " + branchId);
+                System.out.println("Fulfilled Later " + requiredQuantity + " units of " + item.getDrink().getName() + " from branch " + branchId);
             } else {
-                // Need to get stock from HQ
-                int shortfall = requiredQuantity - branchStock;
+                int shortfall = branchStock - requiredQuantity;
 
-                // Use all available stock from branch first
                 if (branchStock > 0) {
-                    stockManager.reduceStock(branchId, drinkId, branchStock);
+                    stockManager.reduceStock(branchId, drinkId, shortfall);
                     System.out.println("Used " + branchStock + " units of " + item.getDrink().getName() + " from branch " + branchId);
                 }
 
-                // Transfer needed stock from HQ to branch
                 transferStockFromHQToBranch(hqBranchId, branchId, drinkId, shortfall);
 
                 // Now deduct the transferred stock from branch
@@ -188,31 +196,22 @@ public class InventoryManager {
         return true;
     }
 
-    /**
-     * Transfer stock from HQ to a branch
-     */
+
     private void transferStockFromHQToBranch(int hqBranchId, int branchId, int drinkId, int quantity) throws SQLException {
-        // Remove from HQ
         stockManager.reduceStock(hqBranchId, drinkId, quantity);
 
-        // Add to branch (you may need to implement addStock method in StockManager)
-        // For now, we'll assume the stock is transferred and will be deducted immediately
         stockManager.addStock(branchId, drinkId, quantity, getMinThresholdForDrink(drinkId));
 
         System.out.println("Transferred " + quantity + " units of drink ID " + drinkId + " from HQ (branch " + hqBranchId + ") to branch " + branchId);
     }
 
-    /**
-     * Get minimum threshold for a drink (helper method)
-     */
+
     private int getMinThresholdForDrink(int drinkId) throws SQLException {
         Drink drink = dbManager.getDrink(drinkId);
         return drink != null ? drink.getMinThreshold() : 5; // Default threshold
     }
 
-    /**
-     * Get stock level for a drink at a specific branch
-     */
+
     private int getStockLevel(int branchId, int drinkId) throws SQLException {
         try {
             System.out.println("Getting Stock Level for Branch " + branchId + " and Drink " + drinkId);

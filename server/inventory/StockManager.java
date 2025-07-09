@@ -23,7 +23,15 @@ public class StockManager {
             return new ArrayList<>();
         }
     }
-
+    public int getDrinkStockbybranch(int branchid,int drinkid){
+        try {
+            int stocklevel = dbManager.getdrinkstockbybranch(branchid,drinkid);
+            return stocklevel;
+        }catch (SQLException e){
+            e.printStackTrace();
+            return  0;
+        }
+    }
     // Add new stock entry
     public boolean addStock(int branchId, int drinkId, int quantity, int minThreshold) {
         if (quantity < 0 || minThreshold < 0) {
@@ -70,10 +78,13 @@ public class StockManager {
             if (stock == null) return false;
 
             int current = (Integer) stock.get("quantity");
-            if (current < amount) return false;
+            System.out.println("The Current Stock is " + current);
+
 
             int stockId = (Integer) stock.get("stock_id");
-            dbManager.updateStock(stockId, current - amount);
+            int newvalue = current - amount;
+            System.out.println(newvalue);
+            dbManager.updateStock(stockId,newvalue);
             return true;
         } catch (SQLException e) {
             System.err.println("Error reducing stock: " + e.getMessage());

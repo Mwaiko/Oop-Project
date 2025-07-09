@@ -55,15 +55,13 @@ public class OrderService {
 
             System.out.println("Inventory updated successfully for order: " + order.getId());
 
-            // Set order status and save to database
+            checkLowStockLevels();
+
             order.setStatus(Order.STATUS_COMPLETED);
             System.out.println("Updated Customer" + order.getCustomer().getId());
             dbManager.addOrder(order);
 
             System.out.println("Order saved to database: " + order.getId());
-
-            // Check for low stock after processing
-            checkLowStockLevels();
 
             return true;
 
