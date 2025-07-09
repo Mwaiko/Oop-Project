@@ -345,7 +345,7 @@ public class Main_ui extends JFrame {
                 g2d.fillRect(0, 0, getWidth(), getHeight());
             }
         };
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(40, 50, 40, 50));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(12, 8, 12, 8);
@@ -532,13 +532,19 @@ public class Main_ui extends JFrame {
     }
 
     private JPanel createStyledCard(String title) {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.X_AXIS));
+        JPanel card = new JPanel(new GridBagLayout());
         card.setBackground(CARD_BACKGROUND);
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER_COLOR, 1),
                 BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        // Add components with proper constraints
         return card;
     }
 
@@ -552,6 +558,13 @@ public class Main_ui extends JFrame {
                 BorderFactory.createEmptyBorder(10, 12, 10, 12)
         ));
         field.setCaretColor(WHITE_TEXT);
+
+        // Set explicit sizing constraints
+        Dimension preferredSize = new Dimension(250, 40);
+        field.setPreferredSize(preferredSize);
+        field.setMinimumSize(preferredSize);
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40)); // Allow horizontal expansion
+
         return field;
     }
 
@@ -732,7 +745,7 @@ public class Main_ui extends JFrame {
         System.setProperty("awt.useSystemAAFontSettings", "on");
         System.setProperty("swing.aatext", "true");
 
-        
+
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
